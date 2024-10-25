@@ -212,7 +212,9 @@ proc isChildOf*[T:UObject](cls: UClassPtr) : bool =
 
 proc isChildOf*[C:UStruct, P:UStruct] : bool = isChildOf(staticClass[C](), staticClass[P]())
 
-proc isA*[T:UObject](obj:UObjectPtr) : bool = obj.isA(staticClass(T))
+proc isAInner*(obj: UObjectPtr, cls: UClassPtr): bool {.importcpp:"#->IsA(#)" .}
+proc isA*[T:UObject](obj:UObjectPtr) : bool = obj.isAInner(staticClass(T))
+proc isA*(obj:UObjectPtr, T: typedesc) : bool = obj.isAInner(staticClass(T))
 
 proc isCDO*(obj : UObjectPtr) : bool = RF_ClassDefaultObject in obj.getFlags()
 proc isEditorOnly*(obj : UObjectPtr): bool {.importcpp:"#->IsEditorOnly()".}
