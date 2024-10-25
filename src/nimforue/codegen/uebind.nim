@@ -354,6 +354,7 @@ func genUClassTypeDef(typeDef : UEType, rule : UERule = uerNone, typeExposure: U
   let fields =
     if typeExposure == uexDsl and typeDef.hasExperimentalFields() and typeDef.fields.len > 0:
       typeDef.fields
+        .filterIt(it.kind == uefProp)
         .map(prop => 
           nnkIdentDefs.newTree(
             getFieldIdent(prop),
@@ -410,7 +411,7 @@ func genUClassTypeDef(typeDef : UEType, rule : UERule = uerNone, typeExposure: U
   #     genAst(typeDecl, funcs):
   #           typeDecl          
   #           funcs
-  # else:
+  # else:    
   result = 
     genAst(typeDecl, props, funcs):
         typeDecl
