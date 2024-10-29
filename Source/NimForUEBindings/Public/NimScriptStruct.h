@@ -19,7 +19,46 @@
 
 		virtual FCapabilities GetCapabilities() const override
 		{
-#if  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
+#if  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6)
+			constexpr FCapabilities Capabilities {
+				(TIsPODType<CPPSTRUCT>::Value ? CPF_IsPlainOldData : CPF_None)
+				| (std::is_trivially_destructible_v<CPPSTRUCT> ? CPF_NoDestructor : CPF_None)
+				| (TIsZeroConstructType<CPPSTRUCT>::Value ? CPF_ZeroConstructor : CPF_None)
+				| (TModels_V<CGetTypeHashable, CPPSTRUCT> ? CPF_HasGetValueTypeHash : CPF_None),
+				TTraits::WithSerializerObjectReferences,
+				TTraits::WithNoInitConstructor,
+				TTraits::WithZeroConstructor,
+				!(TTraits::WithNoDestructor || TIsPODType<CPPSTRUCT>::Value),
+				TTraits::WithSerializer,
+				TTraits::WithStructuredSerializer,
+				TTraits::WithPostSerialize,
+				TTraits::WithNetSerializer,
+				TTraits::WithNetSharedSerialization,
+				TTraits::WithNetDeltaSerializer,
+				TTraits::WithPostScriptConstruct,
+				TIsPODType<CPPSTRUCT>::Value,
+				TIsUECoreType<CPPSTRUCT>::Value,
+				TIsUECoreVariant<CPPSTRUCT>::Value,
+				TTraits::WithCopy,
+				TTraits::WithIdentical || TTraits::WithIdenticalViaEquality,
+				TTraits::WithExportTextItem,
+				TTraits::WithImportTextItem,
+				TTraits::WithAddStructReferencedObjects,
+				TTraits::WithSerializeFromMismatchedTag,
+				TTraits::WithStructuredSerializeFromMismatchedTag,
+				TModels_V<CGetTypeHashable, CPPSTRUCT>,
+				::HasIntrusiveUnsetOptionalState<CPPSTRUCT>(),
+				TIsAbstract<CPPSTRUCT>::Value,
+				TTraits::WithFindInnerPropertyInstance,
+				TTraits::WithClearOnFinishDestroy,
+#if WITH_EDITOR
+				TTraits::WithCanEditChange,
+#endif
+				TTraits::WithVisitor,
+			};
+			return Capabilities;
+
+#elif  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
 			// pulled from Runtime\CoreUObject\Public\UObject\Class.h
 			constexpr FCapabilities Capabilities {
 				(TIsPODType<CPPSTRUCT>::Value ? CPF_IsPlainOldData : CPF_None)
@@ -119,11 +158,11 @@
 				TModels<CGetTypeHashable, CPPSTRUCT>::Value,
 				TIsAbstract<CPPSTRUCT>::Value,
 		#if WITH_EDITOR
-						TTraits::WithCanEditChange,
+				TTraits::WithCanEditChange,
 		#endif
-					};
+				};
 					
-					return Capabilities;
+				return Capabilities;
 #endif
 		}
 
@@ -408,6 +447,37 @@
 		}
 
 
+#if  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6)
+
+		virtual EPropertyVisitorControlFlow Visit(FPropertyVisitorPath& Path, const FPropertyVisitorData& Data, const TFunctionRef<EPropertyVisitorControlFlow(const FPropertyVisitorPath& /*Path*/, const FPropertyVisitorData& /*Data*/)> InFunc) const override
+		{
+			if constexpr (TStructOpsTypeTraits<CPPSTRUCT>::WithVisitor)
+			{
+				CPPSTRUCT* Struct = (CPPSTRUCT*)Data.PropertyData;
+				return Struct->Visit(Path, Data, InFunc);
+			}
+			else
+			{
+				return EPropertyVisitorControlFlow::StepOver;
+			}
+		}
+
+#elif  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
+
+		virtual EPropertyVisitorControlFlow Visit(FPropertyVisitorPath& Path, void* Data, const TFunctionRef<EPropertyVisitorControlFlow(const FPropertyVisitorPath& /*Path*/, void* /*Data*/)> InFunc) const 
+		{
+			if constexpr (TStructOpsTypeTraits<CPPSTRUCT>::WithVisitor)
+			{
+				return ((CPPSTRUCT*)Data)->Visit(Path, InFunc);
+			}
+			else
+			{
+				return EPropertyVisitorControlFlow::StepOver;
+			}
+		}
+
+#endif
+
 #if  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
 
 //5.5 up, pulled from Runtime\CoreUObject\Private\UObject\Class.h
@@ -438,18 +508,6 @@
 			return TTraits::WithIntrusiveOptionalSafeForGC;
 		}
 
-		virtual EPropertyVisitorControlFlow Visit(FPropertyVisitorPath& Path, void* Data, const TFunctionRef<EPropertyVisitorControlFlow(const FPropertyVisitorPath& /*Path*/, void* /*Data*/)> InFunc) const 
-		{
-			if constexpr (TStructOpsTypeTraits<CPPSTRUCT>::WithVisitor)
-			{
-				return ((CPPSTRUCT*)Data)->Visit(Path, InFunc);
-			}
-			else
-			{
-				return EPropertyVisitorControlFlow::StepOver;
-			}
-		}
-
 		virtual void* ResolveVisitedPathInfo(void* Data, const FPropertyVisitorInfo& Info) const
 		{
 			if constexpr (TStructOpsTypeTraits<CPPSTRUCT>::WithVisitor)
@@ -462,7 +520,6 @@
 			}
 		}
 #endif
-		
 	};
 
 
