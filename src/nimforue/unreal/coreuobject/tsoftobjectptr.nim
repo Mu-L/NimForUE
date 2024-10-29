@@ -18,4 +18,6 @@ proc makeTSoftClassPtr*[T : UObject](cls : UClassPtr) : TSoftClassPtr[T] {.impor
 proc get*[T : UObject](softClass : TSoftClassPtr[T]) : UClassPtr {.importcpp:"#.Get()".}
 
 
-
+proc loadSynchronousInner*[T: UObject](softObj: TSoftObjectPtr[T]) : UObjectPtr {.importcpp:"#.LoadSynchronous()".}
+proc loadSynchronous*[T: UObject](softObj: TSoftObjectPtr[T]): ptr T = 
+  softObj.loadSynchronousInner.ueCast(T)

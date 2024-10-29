@@ -417,6 +417,8 @@ func fromStringAsMetaToFlag(meta:seq[string], preMetas:seq[UEMetadata], ueTypeNa
           flags = flags | CPF_Net
         if m == "ReplicatedUsing" or m == "GASReplicated":
           flags = flags | CPF_RepNotify
+        if m == "SaveGame":
+          flags = flags | CPF_SaveGame
         if m.toLower() == "config":
                 flags = flags | CPF_Config  
         if m.toLower() == InstancedMetadataKey.toLower():
