@@ -225,7 +225,7 @@ func makeUEFieldFromNimParamNode*(typeName: string, n:NimNode) : seq[UEField] =
     var paramMetadata = newSeq[UEMetadata]()
     if defaultValue != "":
       paramMetadata.add(paramNames.mapIt(makeUEMetadata(CPP_Default_MetadataKeyPrefix & it, defaultValue)))    
-    result = paramNames.mapIt(makeFieldAsUPropParam(it, nimType, typeName, paramFlags, paramMetadata))   
+    result = paramNames.mapIt(makeFieldAsUPropParam(it.firstToLow().ueNameToNimName(), nimType, typeName, paramFlags, paramMetadata))   
     
    
 proc ufuncFieldFromNimNode*(fn:NimNode, classParam:Option[UEField], typeName:string, functionsMetadata : seq[UEMetadata] = @[]) : (UEField,UEField) =  
@@ -301,11 +301,9 @@ func getTypeNodeFromUProp*(prop : UEField, isVarContext:bool) : NimNode =
     else:
       newEmptyNode()
 
-
-func genFormalParamsInFunctionSignature*(typeDef : UEType, funField:UEField, firstParamName:string = "self") : NimNode = #returns (obj:UObjectPr, param:Fstring..) : FString 
+func genFormalParamsInFunctionSignature*(typeDef: UEType, funField: UEField, firstParamName: string = "self") : NimNode = #returns (obj:UObjectPr, param:Fstring..) : FString 
 #notice the first part has to be introduced. see the final part of genFunc
   let ptrName = ident typeDef.name & (if typeDef.kind == uetDelegate: "" else: "Ptr") #Delegate dont use pointers
-
   let returnType =  
     if funField.doesReturn(): 
         # ident funField.getReturnProp().get().uePropType

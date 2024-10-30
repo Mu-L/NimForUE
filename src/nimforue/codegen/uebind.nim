@@ -421,7 +421,7 @@ func genUClassTypeDef(typeDef : UEType, rule : UERule = uerNone, typeExposure: U
   result.add genInterfaceConverers(typeDef, typeExposure)
 
 func genImportCFunc*(typeDef : UEType, funField : UEField) : NimNode = 
-  let formalParams = genFormalParamsInFunctionSignature(typeDef, funField, "obj")
+  let formalParams = genFormalParamsInFunctionSignature(typeDef, funField, "self")
   var pragmas = nnkPragma.newTree(
           nnkExprColonExpr.newTree(
             ident("importcpp"),
