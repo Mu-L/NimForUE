@@ -274,6 +274,8 @@ proc newUObject*[T:UObject](outer:UObjectPtr, subcls : TSubClassOf[T]) : ptr T =
     params.outer = outer
     cast[ptr T](newObjectFromClass(params))
 
+proc duplicateObject*[T:UObject](source:ptr T, outer:UObjectPtr, name:FName= ENone) : ptr T {.importcpp:"DuplicateObject(@)".}
+
 proc toClass*[T : UObject ](val: TSubclassOf[T]): UClassPtr =
     let className : FString = typeof(T).name.substr(1) #Removes the prefix of the class name (i.e U, A etc.)
     let cls = getClassByName(className)

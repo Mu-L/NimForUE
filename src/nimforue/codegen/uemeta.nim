@@ -270,14 +270,10 @@ func toUEField*(ufun: UFunctionPtr, rules: seq[UEImportRule] = @[]): seq[UEField
     if tempName.len > 1: #There are empty names
       fnNameNim = tempName
 
-
   for rule in rules:
     if actualName in rule.affectedTypes and rule.target == uerTField and rule.rule == uerIgnore: #TODO extract
       UE_Log &"Ignoring {actualName} because it is in the ignore list"
       return  newSeq[UEField]()
-
-
-
 
   func createFunField(params:seq[UEField]) : UEField = 
     # {.cast(nosideEffect).}:
@@ -300,8 +296,6 @@ func toUEField*(ufun: UFunctionPtr, rules: seq[UEImportRule] = @[]): seq[UEField
     let refTermParamName = refTermParamNames[0] #Only one is supported at the meantime if more are found this can be easily extended
     let paramsWithoutRefTerm = params.filterIt(it.name != refTermParamName.name)
     funFields.add createFunField(paramsWithoutRefTerm)
-
-
   
   if ((ufun.isBpExposed()) or uerImportBlueprintOnly notin rules):
     funFields
@@ -877,13 +871,13 @@ proc callSuperConstructor*(initializer: var FObjectInitializer) {.cdecl.} =
 proc postConstructor*(initializer: var FObjectInitializer) {.cdecl.} =
   let obj = initializer.getObj()
   let cls = obj.getClass()
- 
- 
   
 proc defaultConstructor*(initializer: var FObjectInitializer) {.cdecl, deprecated.} =
   callSuperConstructor(initializer)
   postConstructor(initializer)
 
+proc defaultUFunc(context:UObjectPtr, stack:var FFrame,  result: pointer): void {. cdecl .} = 
+  UE_Warn &"{stack.node.getName()} is not implemented in {context.getClass.getName()}"
 
 # when WithEditor:
 #   proc setGIsUCCMakeStandaloneHeaderGenerator*(value: bool) {.importcpp: "(GIsUCCMakeStandaloneHeaderGenerator =#)".}
@@ -967,18 +961,25 @@ proc emitUClass*[T](ueType: UEType, package: UPackagePtr, fnTable: seq[FnEmitter
       UE_Error("Unsupported field kind: " & $field.kind)
 
   for iface in ueType.interfaces:
+    let ifaceCls = getClassByName(iface.removeFirstLetter())
+
     if iface[0] == 'I':
       let ifacename = iface
       let interfaceOffset = ueType.interfaceOffsets.first(entry => entry[0] == ifacename).get(("None", 0'i32))[1]
-      let ifaceCls = getClassByName(iface.removeFirstLetter())
       if ifaceCls.isNotNil():
         let implementedInterface = makeFImplementedInterface(ifaceCls, interfaceOffset, false)
         newCls.interfaces.add(implementedInterface)
     else:
-      let ifaceCls = getClassByName(iface.removeFirstLetter())
       if ifaceCls.isNotNil():
         let implementedInterface = makeFImplementedInterface(ifaceCls, 0, true)
         newCls.interfaces.add(implementedInterface)
+
+    let funcs = ifaceCls.getFuncsFromClass()
+    let missingFuncs = funcs.filterIt(it.getName() notin ueType.getUFuncs().mapIt(it.name.capitalizeAscii()))
+    for fn in missingFuncs:
+      let uef = fn.toUEField()[0]
+      discard emitUFunction(uef, ueType, newCls, some defaultUFunc)
+
   #we let unreal to calculate offsets if we dont calculate them in Nim
   newCls.staticLink(bRelinkExistingProperties = not ueType.hasExperimentalFields())
   newCls.classFlags =  cast[EClassFlags](newCls.classFlags.uint32 or CLASS_Intrinsic.uint32)

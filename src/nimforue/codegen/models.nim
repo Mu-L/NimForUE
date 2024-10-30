@@ -201,6 +201,8 @@ func getFuncDelegateNimName*(ueType:UEType) : string =
     assert ueType.kind == uetDelegate
     getFuncDelegateNimName(ueType.name, ueType.outerClassName)
 
+func getUFuncs*(uet:UEType): seq[UEField] = uet.fields.filterIt(it.kind == uefFunction)
+
 func countMembers*(uet : UEType) : int = 
     #Notice a member only makes sense for classes since ufields props are defined as functions and the functs itself
     case uet.kind:
