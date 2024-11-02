@@ -457,9 +457,10 @@ func genNativeFunction(firstParam:UEField, funField : UEField, body:NimNode) : N
             #does the same thing as StepCompiledIn but you dont need to know the type of the Fproperty upfront (which we dont)
             var paraName {.inject.} : paramType #Define the param
             var paraNameAddr = cast[pointer](paraName.addr) #Cast the Param with   
-            when isOut:                    
-                paraNameAddr = stack.outParms.propAddr
-                paraName = cast[ptr paramType](paraNameAddr)[]
+            when isOut:               
+                if stack.outParms.isNotNil:     
+                    paraNameAddr = stack.outParms.propAddr
+                    paraName = cast[ptr paramType](paraNameAddr)[]
             if not stack.code.isNil():
                 stack.step(stack.obj, paraNameAddr)                          # stack.outParms = stack.outParms.nextOutParm
             else:                
