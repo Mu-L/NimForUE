@@ -8,6 +8,13 @@ import ../core/containers/[unrealstring]
 type 
   UPackage* {. importcpp  } = object of UObject
   UPackagePtr* = ptr UPackage
+  FSavePackageArgs* {.importcpp.} = object
+      topLevelFlags* {.importcpp:"TopLevelFlags".}: EObjectFlags
+      saveFlags* {.importcpp:"SaveFlags".}: ESaveFlags
+      bForceByteSwapping*: bool
+  ESaveFlags* {.importcpp.} = enum
+    SAVE_NoError = 0x00000000
+    SAVE_Error = 0x00000001
 
 func anyPackage*() : UPackagePtr {.importcpp:"(ANY_PACKAGE)".}
 func getTransientPackage*() : UPackagePtr {.importcpp:"GetTransientPackage()".}
@@ -19,6 +26,9 @@ func isEditorOnly*(pkg:UPackagePtr): bool {.importcpp:"#->HasAnyPackageFlags(PKG
 # * Helper function for converting short to long script package name (InputCore -> /Script/InputCore)
 proc convertToLongScriptPackageName*(inShortName:FString) : FString {.importcpp:"FPackageName::ConvertToLongScriptPackageName(*#)".}
 
+proc longPackageNameToFilename*(inLongPackageName:FString, inExtension: FString = "") : FString {.importcpp:"FPackageName::LongPackageNameToFilename(*#, *#)".}
+
+proc getAssetPackageExtension*() : FString {.importcpp:"FPackageName::GetAssetPackageExtension()".}
 
 func getPackageByName*(packageShortName:FString) : UPackagePtr = 
         findObject[UPackage](nil, convertToLongScriptPackageName(packageShortName))
@@ -26,7 +36,9 @@ func getPackageByName*(packageShortName:FString) : UPackagePtr =
 func tryGetPackageByName*(packageName:FString) : Option[UPackagePtr] = 
     someNil(getPackageByName(packageName))
 
-# let nimPackage* = getPackageByName("Nim")
+proc createPackage*(packagePath: FString) : UPackagePtr {.importcpp: "CreatePackage(*#)".}
+proc fullyLoad*(pkg: UPackagePtr) {.importcpp: "#->FullyLoad()".}
+proc markPackageDirty*(pkg: UPackagePtr) {.importcpp: "#->MarkPackageDirty()".}
 
 
 func getShortName*(pkg:UPackagePtr): FString = pkg.getName().split("/")[^1]
@@ -43,3 +55,5 @@ func tryGetUETypeByName*[T : UObject](pkg:UPackagePtr, name:FString) : Option[pt
     someNil(getUETypeByName[T](pkg, name))
 
 func setModuleRelativePath*(pkg:UPackagePtr, obj: UObjectPtr, path: FString) {.importcpp:"#->GetMetaData()->SetValue(#, TEXT(\"ModuleRelativePath\"), *#)".}
+
+proc savePackage*(pkg: UPackagePtr, obj: UObjectPtr, packageFileName: FString, saveArgs: FSavePackageArgs) {.importcpp: "UPackage::SavePackage(#, #, *#, #)", header: "UObject/SavePackage.h".}

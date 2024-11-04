@@ -1,4 +1,5 @@
 include ../../definitions
+import ../../../utils/utils
 import std/[sugar, enumerate]
 
 type TArray*[out T] {.importcpp } = object
@@ -30,8 +31,7 @@ func makeTArray*[T](a:T, args:varargs[T]): TArray[T] =
 # proc makeTArray*[T](): TArray[T] {.importcpp: "'0(@)", constructor, nodecl.}
 
 # proc makeTArray*[T](values:openarray[T]): TArray[T] {.importcpp: "'0({@})", constructor, nodecl.} #TODO
-
-func getData*[T](arr:TArray[T]): ptr T {.importcpp: "#.GetData()", nodecl.}
+func getData*[T](arr:TArray[T]): ptr T {.importcpp: "const_cast<'0>(#.GetData())", nodecl.}
 
 func len*[T](arr:TArray[T]) : int32 {.inline.} = arr.num()
 
