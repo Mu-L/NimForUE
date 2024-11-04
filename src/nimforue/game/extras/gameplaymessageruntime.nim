@@ -1,3 +1,12 @@
+#[ requirements 
+nuegame.h:
+#include "GameFramework/GameplayMessageSubsystem.h"
+
+game.json: 
+{
+    "gamePlugins": ["GameplayMessageRouter"]
+}
+]#
 
 import std/[macros, genasts]
 include unrealprelude

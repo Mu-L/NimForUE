@@ -1,3 +1,14 @@
+#[ requirements
+nuegame.h:
+#include "MVVMViewModelBase.h"
+#include "Types/MVVMViewModelContext.h"
+
+game.json:
+{
+    "gameModules": ["ModelViewViewModel"]
+}
+]#
+
 include unrealprelude
 #TODO This will need to be changed to exported when deploying, review others extras
 when WithEditor:
@@ -5,11 +16,6 @@ when WithEditor:
 else:
   import ../../unreal/bindings/exported/modelviewviewmodel
 
-#[
-  This assumes you have in your game.json   "gameModules": ["ModelViewViewModel"]
-  and in your nuegame.h #include "MVVMViewModelBase.h"
-
-]#
 
 type 
   FFieldNotificationId* {.importcpp.} = object
@@ -23,12 +29,6 @@ proc broadcastFieldValueChanged*(vm: UMVVMViewModelBasePtr, name: FName): void =
   let fieldId = getFieldId(vm, name)
   broadcastFieldValueChanged(vm, fieldId)
 
-#[
-These includes should be in nuegame.h in order to make the following work:
-#include "MVVMViewModelBase.h"
-#include "Types/MVVMViewModelContext.h"
-
-]#
 proc getViewModelCollectionWithContextFor(T: typedesc, worldContext: UObjectPtr): (UMVVMViewModelCollectionObjectPtr, FMVVMViewModelContext)   =
   let vmSubsystem = tryGetSubsystem[UMVVMGameSubsystem](worldContext).get(nil)
   if vmSubsystem.isNil:
