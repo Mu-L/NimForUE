@@ -34,6 +34,18 @@ const CompileBPMetadataKey* = "CompileBP" #recompile all childs even if nothing 
 const NeedsObjectInitializerCtorMetadataKey* = "NeedsObjectInitializerCtor" #recompile all childs even if nothing changes
 const ExperimentalFieldsMetadataKey* = "ExperimentalFields" #Makes the uClass to emit fields. Meaning it wont relink and we calculate offsets in Nim
 
+# Custom metadata keys
+#uprop
+const GASReplicatedMetadataKey*: string = "GASReplicated" # generates boilerplate for GAS replicated properties using GAMEPLAYATTRIBUTE_REPNOTIFY 
+#ufunc
+#uclass
+#ustruct
+const WithGetMetadataKey*: string = "WithGet" # generates a TBaseStructure with Get function that returns a null UScriptStruct, see uebind.getStructTemplate
+#uinterface
+#uparam
+#uenum and umeta
+# END Custom metadata keys
+
 type #TODO get rid of this (this was used before Nim supported virtual)
   CppModifiers* = enum
     cmNone, cmConst

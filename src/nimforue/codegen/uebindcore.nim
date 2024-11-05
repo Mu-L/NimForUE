@@ -411,9 +411,9 @@ func fromStringAsMetaToFlag(meta:seq[string], preMetas:seq[UEMetadata], ueTypeNa
           flags = flags | CPF_BlueprintAssignable | CPF_BlueprintVisible
         if m == "BlueprintCallable":
           flags = flags | CPF_BlueprintCallable
-        if m == "Replicated" or m == "ReplicatedUsing" or m == "GASReplicated":
+        if m == "Replicated" or m == "ReplicatedUsing" or m == GASReplicatedMetadataKey:
           flags = flags | CPF_Net
-        if m == "ReplicatedUsing" or m == "GASReplicated":
+        if m == "ReplicatedUsing" or m == GASReplicatedMetadataKey:
           flags = flags | CPF_RepNotify
         if m == "SaveGame":
           flags = flags | CPF_SaveGame

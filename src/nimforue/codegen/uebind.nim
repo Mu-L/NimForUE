@@ -313,8 +313,10 @@ struct TStructOpsTypeTraits<{typeDef.name}> : public TStructOpsTypeTraitsBase2<{
 
 """
 
+  # TBaseStructure::Get returns null will this this be an issue?
+  # In the engine it's used to return a UScriptStruct* from a StaticStruct function (see generated header/cpp files) like you would a UClass* for StaticClass
   let tBaseStructure = 
-    if "WithGet" in typeDef.metadata:
+    if WithGetMetadataKey in typeDef.metadata:
       &"""
         template<> struct TBaseStructure<{typeDef.name}> 
         {{

@@ -168,7 +168,7 @@ proc expandGameplayAttribute(uef: UEField): NimNode =
   assert uef.kind == uefProp
   let capName = uef.name.capitalizeAscii()
 
-  let repMeta = uef.metadata.first((meta)=>meta.name.toLower() == "gasreplicated")
+  let repMeta = uef.metadata.first((meta)=>meta.name == GASReplicatedMetadatakey)
   let repFunc =
     if repMeta.isSome():
       # on emit we set the repnotifyfunc (in uemeta emitFProperty) no need to set ReplicatedUsing
@@ -228,7 +228,7 @@ func getRepNotifyFromString(repNotify: string): ELifetimeRepNotifyCondition =
   REPNOTIFY_OnChanged
 
 func getReplicatedProps(ueType: UEType): seq[UEField] = 
-  ueType.fields.filterIt(it.kind == uefProp and ("Replicated" in it.metadata or "ReplicatedUsing" in it.metadata or "GASReplicated" in it.metadata))
+  ueType.fields.filterIt(it.kind == uefProp and ("Replicated" in it.metadata or "ReplicatedUsing" in it.metadata or GASReplicatedMetadataKey in it.metadata))
 
 proc genGetLifetimeReplicatedProps(ueType: UEType): NimNode =
   #[Generates when needed.

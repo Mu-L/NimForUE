@@ -730,7 +730,7 @@ proc emitFProperty*(propField: UEField, outer: UStructPtr, setOffsets: bool = fa
     prop.setMetadata(n metadata.name, $metadata.value)
     if metadata.name == "ReplicatedUsing":
       prop.repNotifyFunc = makeFName metadata.value
-    if metadata.name == "GASReplicated":
+    if metadata.name == GASReplicatedMetadataKey:
       prop.repNotifyFunc = makeFName "onRep" & propField.name.capitalizeAscii()
   outer.addCppProperty(prop)
   prop
