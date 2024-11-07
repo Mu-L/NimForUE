@@ -8,7 +8,7 @@ import ../core/containers/[unrealstring]
 type 
   UPackage* {. importcpp  } = object of UObject
   UPackagePtr* = ptr UPackage
-  FSavePackageArgs* {.importcpp, header: "UObject/SavePackage.h".} = object
+  FSavePackageArgs* {.importcpp.} = object
       topLevelFlags* {.importcpp:"TopLevelFlags".}: EObjectFlags
       saveFlags* {.importcpp:"SaveFlags".}: ESaveFlags
       bForceByteSwapping*: bool

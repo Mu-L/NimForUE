@@ -11,11 +11,11 @@ include unrealprelude
   #include "Misc/ObjectThumbnail.h"
 
   game.json:
-  "gameModules": ["ImageCore", "ImageWrapper"]
+  "gameModules": ["ImageCore", "ImageWrapper", "CollectionManager"]
 ]#
 
 type
-    FObjectThumbnail* {.importcpp.} = object #EDITOR?
+    FObjectThumbnail* {.importcpp.} = object 
     FThumbnailMap* {.importcpp.} = object
    
     FImageView* {.importcpp.} = object
@@ -40,7 +40,6 @@ type
       BGRE = 4
       GrayF = 5
 
-#editor needs ObjectTools.h you can add it in the header or your nuegame.h. Also needs: gameModules: ["CollectionManager"] in your game.json 
 proc getImageWidth*(thumbnail: ptr FObjectThumbnail): int32 {.importcpp: "#->GetImageWidth()".}
 proc getImageHeight*(thumbnail: ptr FObjectThumbnail): int32 {.importcpp: "#->GetImageHeight()".}
 proc getUncompressedImageData*(thumbnail: ptr FObjectThumbnail): var TArray[uint8] {.importcpp: "#->GetUncompressedImageData()".}

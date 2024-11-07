@@ -58,4 +58,4 @@ proc getModuleOwnerPlugin*(pluginManager: ptr IPluginManager, moduleName: FName)
 proc queryModules*(mm: ptr FModuleManager, outModules {.byref.}: TArray[FModuleStatus]) {.importcpp:"#->QueryModules(#)".}
 proc queryModule*(mm: ptr FModuleManager, name: FName, outModule: out FModuleStatus) {.importcpp:"#->QueryModule(@)".}
 proc loadModule*(mm: ptr FModuleManager, name: FName): pointer {.importcpp:"#->LoadModule(@)".}
-proc loadModulePtr*[T](name: FName): ptr T {.importcpp:"FModuleManager::LoadModulePtr<'*0>(#)".} #This should be part of EngineTypes
+proc loadModulePtr*[T](name: FName): ptr T {.importcpp:"FModuleManager::LoadModulePtr<'*0>(#)".}
