@@ -217,8 +217,7 @@ proc `$`*(cursorLocation:FViewportCursorLocation) : string =
   ]#
 
 
-proc loadModulePtr*[T](name: FName): ptr T {.importcpp:"FModuleManager::LoadModulePtr<'*0>(#)".} #This should be part of EngineTypes
-proc loadAssetTools*() : IAssetToolsPtr {.importcpp: "&FModuleManager::LoadModuleChecked<FAssetToolsModule>(\"AssetTools\").Get()".}
+proc loadAssetTools*(): IAssetToolsPtr {.importcpp: "&FModuleManager::LoadModuleChecked<FAssetToolsModule>(\"AssetTools\").Get()".}
 
 proc registerAssetTypeActions*(assetTools:IAssetToolsPtr, newActions:TSharedRef[FAssetTypeActions_Base]) {.importcpp: "#->RegisterAssetTypeActions(#)".}
 

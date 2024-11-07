@@ -2,7 +2,9 @@ include ../../definitions
 import ../../../utils/utils
 import std/[sugar, enumerate]
 
-type TArray*[out T] {.importcpp } = object
+type 
+  TArray*[out T] {.importcpp } = object
+  TArray64*[out T] {.importcpp } = object
 
 func num*[T](arr:TArray[T]): int32 {.importcpp: "#.Num()" noSideEffect}
 proc removeAt*[T](arr: var TArray[T], idx:Natural) {.importcpp: "#.RemoveAt(#)".}

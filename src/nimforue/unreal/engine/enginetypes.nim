@@ -474,6 +474,34 @@ type
 
   UGameInstance* {.importcpp, inheritable, pure.} = object of UObject
   UGameInstancePtr* = ptr UGameInstance
+  FTexture2DMipMap*{.importcpp.} = object
+    sizeX* {.importcpp:"SizeX".}: int32
+    sizeY* {.importcpp:"SizeY".}: int32
+    data* {.importcpp:"Data".}: TArray[uint8]
+    bulkData* {.importcpp:"BulkData".}: FByteBulkData
+
+  FTexturePlatformData*{.importcpp.} = object
+    sizeX* {.importcpp:"SizeX".}: int32
+    sizeY* {.importcpp:"SizeY".}: int32
+    numMips* {.importcpp:"NumMips".}: int32
+    mips* {.importcpp:"Mips".}: TArray[ptr FTexture2DMipMap]
+    pixelFormat* {.importcpp:"PixelFormat".}: EPixelFormat
+
+  FTextureSource* {.importcpp.} = object
+  # ETextureSourceFormat*{.importcpp, size:sizeof(int32).} = enum
+  #   TSF_Invalid,
+  #   TSF_G8,
+  #   TSF_BGRA8,
+  #   TSF_BGRE8,
+  #   TSF_RGBA16,
+  #   TSF_RGBA16F,
+  #   TSF_RGBA8_DEPRECATED,
+  #   TSF_RGBE8_DEPRECATED,
+  #   TSF_G16,
+  #   TSF_RGBA32F,
+  #   TSF_R16F,
+  #   TSF_R32F,
+  #   TSF_MAX
 
 proc toString*(hit: FHitResult): FString {.importcpp: "#.ToString()" .}
 proc `$`*(hit: FHitResult): string = hit.toString()

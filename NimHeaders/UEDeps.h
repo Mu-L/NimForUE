@@ -61,6 +61,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectAllocator.h"
 #include "UObject/ObjectSaveContext.h"
+#include "UObject/SavePackage.h"
 //Slate
 #include "Widgets/Layout/Anchors.h"
 

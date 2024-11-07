@@ -262,6 +262,7 @@ proc createDefaultSubobjectNim*[T:UObject](outer:UObjectPtr, name:FName) : ptr T
 
 proc getName*(prop:FFieldPtr | FFieldClassPtr) : FString {. importcpp:"#->GetName()" .}
 
+
 proc initializeValue*(prop:FPropertyPtr, dest: pointer) {. importcpp:"#->InitializeValue(#)" .}
 proc copySingleValue*(prop:FPropertyPtr, dest: pointer, src: pointer) {. importcpp:"#->CopySingleValue(@)" .}
 proc getOffsetForUFunction*(prop:FPropertyPtr) : int32 {. importcpp:"#->GetOffset_ForUFunction()".}
@@ -395,6 +396,7 @@ proc getOuter*(obj : UObjectPtr) : UObjectPtr {. ureflect, importcpp: "#->GetOut
 proc getWorld*(obj : UObjectPtr) : UWorldPtr {. ureflect, importcpp: "#->GetWorld()" .}
 
 proc getName*(obj: UObjectPtr): FString {. ureflect, importcpp:"#->GetName()" .}
+proc getFullName*(obj: UObjectPtr): FString {. ureflect, importcpp:"#->GetFullName()" .}
 proc conditionalBeginDestroy*(obj: UObjectPtr) : void {. importcpp:"#->ConditionalBeginDestroy()".}
 proc processEvent*(obj: UObjectPtr, fn:UFunctionPtr, params:pointer) : void {. importcpp:"#->ProcessEvent(@)" .}
 proc modify*(obj: UObjectPtr) {.importcpp:"#->Modify()".}

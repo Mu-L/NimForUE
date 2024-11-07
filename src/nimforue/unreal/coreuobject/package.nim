@@ -8,13 +8,15 @@ import ../core/containers/[unrealstring]
 type 
   UPackage* {. importcpp  } = object of UObject
   UPackagePtr* = ptr UPackage
-  FSavePackageArgs* {.importcpp.} = object
+  FSavePackageArgs* {.importcpp, header: "UObject/SavePackage.h".} = object
       topLevelFlags* {.importcpp:"TopLevelFlags".}: EObjectFlags
       saveFlags* {.importcpp:"SaveFlags".}: ESaveFlags
       bForceByteSwapping*: bool
   ESaveFlags* {.importcpp.} = enum
     SAVE_NoError = 0x00000000
     SAVE_Error = 0x00000001
+    SAVE_FromAutosave = 0x00000002
+    SAVE_KeepDirty = 0x00000004
 
 func anyPackage*() : UPackagePtr {.importcpp:"(ANY_PACKAGE)".}
 func getTransientPackage*() : UPackagePtr {.importcpp:"GetTransientPackage()".}
@@ -56,4 +58,4 @@ func tryGetUETypeByName*[T : UObject](pkg:UPackagePtr, name:FString) : Option[pt
 
 func setModuleRelativePath*(pkg:UPackagePtr, obj: UObjectPtr, path: FString) {.importcpp:"#->GetMetaData()->SetValue(#, TEXT(\"ModuleRelativePath\"), *#)".}
 
-proc savePackage*(pkg: UPackagePtr, obj: UObjectPtr, packageFileName: FString, saveArgs: FSavePackageArgs) {.importcpp: "UPackage::SavePackage(#, #, *#, #)", header: "UObject/SavePackage.h".}
+proc savePackage*(pkg: UPackagePtr, obj: UObjectPtr, packageFileName: FString, saveArgs: FSavePackageArgs): bool {.importcpp: "UPackage::SavePackage(#, #, *#, #)".}

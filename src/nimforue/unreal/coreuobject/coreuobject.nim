@@ -418,6 +418,8 @@ type
     y* {.importcpp: "Y".}: float32
     x* {.importcpp: "X".}: float32
 
+  FByteBulkData* {.importcpp.} = object #Enginetypes
+
   ESearchCase* {.size: sizeof(uint8), pure.} = enum
     CaseSensitive, IgnoreCase, ESearchCase_MAX
   ESearchDir* {.size: sizeof(uint8), pure.} = enum
@@ -466,6 +468,9 @@ type
     YesNoYesAllNoAllCancel, YesNoYesAll, EAppMsgType_MAX
   EDataValidationResult* {.size: sizeof(uint8), pure.} = enum
     Invalid, Valid, NotValidated, EDataValidationResult_MAX
+  EBulkDataLockFlags{.importcpp.} = enum
+    LOCK_READ_ONLY = 1
+    LOCK_READ_WRITE = 2
 
 let identity* {.importcpp: "FTransform::Identity", nodecl.}: FTransform 
 proc getTicks*(dt: FDateTime): int {.importcpp: "GetTicks".}
@@ -543,3 +548,8 @@ func getCenter*(box: FBox): FVector {.importcpp: "#.GetCenter()".}
 func getExtent*(box: FBox): FVector {.importcpp: "#.GetExtent()".}
 
 proc `<<`*(ar: var FArchive, obj: FVector) {.importcpp:"(#<<#)".}
+
+proc lock*(bulkData: FByteBulkData, lockFlags: EBulkDataLockFlags) {.importcpp: "#.Lock(@)".}
+proc lockReadOnly*(bulkData: FByteBulkData): pointer {.importcpp: "const_cast<void*>(#.LockReadOnly())".}
+proc unlock*(bulkData: FByteBulkData) {.importcpp: "#.Unlock()".}
+proc realloc*(bulkData: FByteBulkData, size: int32): ptr uint8 {.importcpp: "#.Realloc(@)".}
