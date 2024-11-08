@@ -3,7 +3,7 @@ include ../unreal/definitions
 import ../utils/[utils, ueutils]
 import ../unreal/core/containers/[unrealstring, array, map, set]
 import ../unreal/coreuobject/[uobjectflags]
-import nuemacrocache, models, modelconstructor, projectinstrospect, uebindcore
+import nuemacrocache, models, modelconstructor, projectintrospect, uebindcore
 import modulerules
 # import ../../buildscripts/nimforueconfig #probably nimforueconfig should be removed from buildscripts
 

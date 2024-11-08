@@ -4,7 +4,7 @@ import std/[strformat, tables, hashes, times, options, sugar, json, osproc, stru
 import ../../buildscripts/[buildscripts, nimforueconfig]
 import ../unreal/nimforue/nimforuebindings
 
-import projectinstrospect
+import projectintrospect
 
 
 func getAllFieldsFromUEType(uet:UEType): seq[UEField] = 

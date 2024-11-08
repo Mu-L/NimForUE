@@ -3,7 +3,7 @@ when not defined(nimsuggest):
 import std/[options,sugar, typetraits, sequtils]
 
 when defined(game): #TODO remove this
-  import ../../game/extras/ui
+  import ../../game/nue/ui
 else:
   type 
     SCompoundWidget* {.importcpp, inheritable.} = object of SWidget
