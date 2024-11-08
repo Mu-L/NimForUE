@@ -32,6 +32,6 @@ proc unregisterListener*(msgSubsystem: UGameplayMessageSubsystemPtr, handle: FGa
 
 proc unregister*(handle: FGameplayMessageListenerHandle) {.importcpp: "#.Unregister()".}
 
-proc isValid*(handlle: FGameplayMessageListenerHandle): bool {.importcpp:"#.IsValid()".}
+proc isValid*(handle: FGameplayMessageListenerHandle): bool {.importcpp:"#.IsValid()".}
 
 proc broadcastMessage*[T](msgSubsystem: UGameplayMessageSubsystemPtr, channel: FGameplayTag, msg {.byref.}: T) {.importcpp:"#->BroadcastMessage<'3>(@)".}

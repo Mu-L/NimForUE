@@ -420,6 +420,9 @@ type
 
   FByteBulkData* {.importcpp.} = object #Enginetypes
 
+  # StructUtils
+  FInstancedStruct* {.importcpp.} = object
+
   ESearchCase* {.size: sizeof(uint8), pure.} = enum
     CaseSensitive, IgnoreCase, ESearchCase_MAX
   ESearchDir* {.size: sizeof(uint8), pure.} = enum
