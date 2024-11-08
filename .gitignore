@@ -51,7 +51,7 @@ NimHeaders/Modules
 NimHeaders/UEGenBindings.h
 NimHeaders/UEGenClassDefs.h
 
-nue
+./nue
 
 NimHeaders/Game.h
 
