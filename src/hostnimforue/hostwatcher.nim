@@ -1,4 +1,4 @@
-import std/[times, os, dynlib, tables, strutils, sequtils, algorithm, locks, sugar, options, compilesettings, strformat]
+import std/[times, os, dynlib, tables, strutils, sequtils, algorithm, locks, sugar, options, compilesettings, strformat, paths]
 import pure/asyncdispatch
 import ../buildscripts/[buildscripts]
 import ffigen
@@ -26,6 +26,9 @@ proc loadNueLib*(libName, nextPath: string, loadedFrom:NueLoadedFrom) =
     logger(&"[NUEHost]Passing the handle of the lib: {libName} valid: {nueLib.lib != nil}")
     onLibLoaded(libName.cstring, nextPath.cstring, (nueLib.timesReloaded - 1).cint, loadedFrom, nueLib.lib)
 
+proc getPluginFromPath(entry: string): string =
+    entry.lastPathPart
+
 {.push  exportc, cdecl, dynlib.}
 
 proc registerLogger*(inLogger: LoggerSignature)  =
@@ -35,13 +38,12 @@ proc registerLogger*(inLogger: LoggerSignature)  =
 proc ensureGuestIsCompiled*() : void =
     ensureGuestIsCompiledImpl()
 
-
-
 proc getGameModules(withUEEditor: bool): cstring = 
     let kinds = if withUEEditor: {modkAll} else: {modkDefault, modkRuntime}
     let userPluginModules: seq[string] = getUserGamePlugins(kinds).values.toSeq.concat
     let gameModules = getGameUserConfigValue("gameModules",  newSeq[string]()) & userPluginModules    
-    let gameModulesStr = gameModules.join(",")
+    let gameSubmodules = getGameUserConfigValue("enginePluginsByPath",  newSeq[string]()).map(getPluginFromPath)
+    let gameModulesStr = (gameModules & gameSubmodules).join(",")
     return gameModulesStr.cstring    
 
 proc setWinCompilerSettings(sdkVersion, compilerVersion, toolchainDir:cstring) =

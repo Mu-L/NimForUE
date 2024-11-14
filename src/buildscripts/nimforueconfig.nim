@@ -1,4 +1,4 @@
-import std/[json, jsonutils, os, strutils, genasts, sequtils, strformat, sugar, options, tables]
+import std/[json, jsonutils, os, strutils, genasts, sequtils, strformat, sugar, options, tables, paths]
 import ../nimforue/utils/utils
 import buildcommon
 
@@ -325,25 +325,33 @@ type UEPluginModuleKind* = enum
   modkDefault = "Default" 
   modkRuntime = "Runtime"
 
+proc getUPluginModules*(pluginPath:string, kinds: set[UEPluginModuleKind]): seq[string] = #plugin: modules
+  let pluginManifestPath = pluginPath / &"{pluginPath.lastPathPart}.uplugin"
+  if not fileExists(pluginManifestPath):
+    quit "Cant find the plugin manifest in " & pluginManifestPath
+  let pluginManifest = readFile(pluginManifestPath).parseJson()
+  var modules = newSeq[string]()
+  for m in pluginManifest["Modules"]:
+    let moduleName = m["Name"].jsonTo(string)
+    let moduleType = m["Type"].jsonTo(string)
+    if modkAll in kinds or 
+      kinds.toSeq.anyIt(moduleType == $it):
+        result.add moduleName
+
 proc getUserGamePlugins*(kinds: set[UEPluginModuleKind]): Table[string, seq[string]] = #plugin: modules
   result = initTable[string, seq[string]]()
   let userGamePlugins = getGameUserConfigValue("gamePlugins", newSeq[string]())
-  for pluginName in userGamePlugins:     
-    #We need to find out the modules this plugin has. In order todo so, we need to read the
-    #plugin.uPluginFile which holds all the module names it has.
-    let pluginManifestPath = PluginDir / ".." / pluginName / &"{pluginName}.uplugin"
-    if not fileExists(pluginManifestPath):
-      quit "Cant find the plugin manifest in " & pluginManifestPath
-    let pluginManifest = readFile(pluginManifestPath).parseJson()
-    var modules = newSeq[string]()
-    for m in pluginManifest["Modules"]:
-      let moduleName = m["Name"].jsonTo(string)
-      let moduleType = m["Type"].jsonTo(string)
-      if modkAll in kinds or 
-        kinds.toSeq.anyIt(moduleType == $it):
-          modules.add moduleName
+  for pluginName in userGamePlugins:
+    let modules = getUPluginModules(PluginDir / ".." / pluginName, kinds)
     if modules.len > 0:
       result[pluginName] = modules
+
+proc getEnginePluginsByPath*(enginePluginDir: string): Table[string, seq[string]] = #pluginPath: modules
+  let enginePluginPaths = getGameUserConfigValue("enginePluginsByPath", newSeq[string]())
+  for pluginPath in enginePluginPaths:
+    let modules = getUPluginModules(enginePluginDir / pluginPath, {modkAll})
+    if modules.len > 0:
+      result[enginePluginDir / pluginPath] = modules
 
 proc getModuleTypeByName(conf:NimForUEConfig, moduleName: string): UEModuleKind =
   #NOTE the logic here is for headers. It's also used for symbols but they are handled slightly differently (see below),
@@ -459,11 +467,16 @@ proc getUEHeadersIncludePaths*(conf:NimForUEConfig) : seq[string] =
   var engineRuntimePlugins = @["GameplayAbilities"]
   var gamePlugins = newSeq[string]()
 
-  var userGameModules = getGameUserConfigValue("gameModules",  newSeq[string]())
   for pluginName, modules in getUserGamePlugins({modkAll}):
     for moduleName in modules:
       gamePlugins.add getGamePluginModule(pluginName, moduleName)
 
+  var enginePluginsByPath = newSeq[string]()
+  for pluginPath, modules in getEnginePluginsByPath(enginePluginDir):
+    for moduleName in modules:
+      enginePluginsByPath.add pluginPath / "Source" / moduleName / "Public"
+
+  var userGameModules = getGameUserConfigValue("gameModules",  newSeq[string]())
   for userModule in userGameModules:
     case conf.getModuleTypeByName(userModule):
     of uemEngineRuntime:
@@ -478,7 +491,6 @@ proc getUEHeadersIncludePaths*(conf:NimForUEConfig) : seq[string] =
       engineExperimentalPlugins.add(userModule)
     of uemEngineRuntimePlugins:
       engineRuntimePlugins.add(userModule)
-   
 
 
 #Notice the header are not need for compiling the dll. We use a PCH. They will be needed to traverse the C++
@@ -490,7 +502,8 @@ proc getUEHeadersIncludePaths*(conf:NimForUEConfig) : seq[string] =
     enginePlugins.map(module=>getEnginePluginModule(module)) & 
     engineRuntimePlugins.map(module=>getEngineRuntimePluginModule(module)) &
     engineExperimentalPlugins.map(module=>getEngineExperimentalPluginModule(module)) & 
-    gamePlugins
+    gamePlugins &
+    enginePluginsByPath
 
   (essentialHeaders & moduleHeaders & editorHeaders).map(path => path.normalizedPath().normalizePathEnd())
 
@@ -500,6 +513,7 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
   let platformDir = if conf.targetPlatform == Mac: MacPlatformDir() else: WinPlatformDir()
   let confDir = $conf.targetConfiguration
   let engineDir = conf.engineDir
+  let enginePluginDir = engineDir / "Plugins"
   let pluginDir = PluginDir
   let unrealFolder = if conf.withEditor: "UnrealEditor" else: "UnrealGame"
   proc getObjFiles(dir: string, moduleName:string) : seq[string] = 
@@ -528,7 +542,7 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
 #E:\unreal_sources\5.1Launcher\UE_5.1\Engine\Plugins\EnhancedInput\Intermediate\Build\Win64\UnrealEditor\Development\EnhancedInput
   proc getEnginePluginSymbolsPathFor(prefix,  moduleName:string): seq[string] =  
       when defined windows:
-        let dir = engineDir / "Plugins" / moduleName / "Intermediate/Build" / platformDir / unrealFolder / confDir / moduleName 
+        let dir = enginePluginDir / moduleName / "Intermediate/Build" / platformDir / unrealFolder / confDir / moduleName 
         if conf.withEditor:
           @[dir / &"{prefix}-{moduleName}{suffix}.lib"]
         else:
@@ -536,12 +550,12 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
 
       elif defined macosx:
         let platform = $conf.targetPlatform #notice the platform changed for the symbols (not sure how android/consoles/ios will work)
-        @[engineDir / "Plugins" / moduleName / "Binaries" / platform / &"{prefix}-{moduleName}.dylib"]
+        @[enginePluginDir / moduleName / "Binaries" / platform / &"{prefix}-{moduleName}.dylib"]
 
   #engineFolder is Runtime, Experimental etc.
   proc getEnginePluginSymbolsPathFor(prefix,  engineFolder, moduleName:string): seq[string] =  
       when defined windows:
-        let dir = engineDir / "Plugins" / engineFolder / moduleName / "Intermediate/Build" / platformDir / unrealFolder / confDir / moduleName 
+        let dir = enginePluginDir / engineFolder / moduleName / "Intermediate/Build" / platformDir / unrealFolder / confDir / moduleName 
         if conf.withEditor:
           @[dir / &"{prefix}-{moduleName}{suffix}.lib"]
         else:
@@ -549,8 +563,7 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
 
       elif defined macosx:
         let platform = $conf.targetPlatform #notice the platform changed for the symbols (not sure how android/consoles/ios will work)
-        @[engineDir / "Plugins" / engineFolder  / moduleName / "Binaries" / platform / &"{prefix}-{moduleName}.dylib"]
-
+        @[enginePluginDir / engineFolder  / moduleName / "Binaries" / platform / &"{prefix}-{moduleName}.dylib"]
 
   proc getNimForUESymbols(): seq[string] = 
     when defined macosx:
@@ -575,18 +588,22 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
         let libPathBindings = getObjFiles(dir / "NimForUEBindings", "NimForUEBindings")
         libPath & libPathBindings
     
+  proc getGameModuleDynLib(pluginDir, moduleName: string): string = 
+    when defined macosx:
+      pluginDir / "Binaries" / $conf.targetPlatform / &"UnrealEditor-{moduleName}.dylib"
+    elif defined windows:
+      pluginDir / "Intermediate/Build" / platformDir / unrealFolder / confDir / &"{moduleName}/UnrealEditor-{moduleName}{suffix}.lib"
+
   proc getGamePluginSymbols(pluginName: string, modules: seq[string]): seq[string] = 
-    proc getGameModuleDynLib(pluginDir, moduleName: string): string = 
-      when defined macosx:
-        pluginDir / "Binaries" / $conf.targetPlatform / &"UnrealEditor-{moduleName}.dylib"
-      elif defined windows:
-        pluginDir / "Intermediate/Build" / platformDir / unrealFolder / confDir / &"{moduleName}/UnrealEditor-{moduleName}{suffix}.lib"
-    
     modules.mapIt(getGameModuleDynLib(pluginDir / ".." / pluginName , it))
 
   var userGamePluginSymbols = newSeq[string]()
   for pluginName, modules in getUserGamePlugins({modkAll}):
     userGamePluginSymbols.add(getGamePluginSymbols(pluginName, modules))
+
+  var enginePluginsByPathSymbols = newSeq[string]()
+  for pluginPath, modules in getEnginePluginsByPath(enginePluginDir):
+    enginePluginsByPathSymbols.add(modules.map(module => getGameModuleDynLib(pluginPath, module)))
 
   var enginePlugins = @["EnhancedInput"]
   var experimentalPlugins = newSeq[string]()
@@ -619,11 +636,8 @@ proc getUESymbols*(conf: NimForUEConfig): seq[string] =
   let engineRuntimePluginSymbolsPaths = engineRuntimepluginSymbols.map(modName=>getEnginePluginSymbolsPathFor("UnrealEditor", "Runtime", modName)).flatten()
   let engineExperimentalPluginSymbolsPaths = experimentalPlugins.map(modName=>getEnginePluginSymbolsPathFor("UnrealEditor", "Experimental", modName)).flatten()
 
-
-
-
   (engineSymbolsPaths & enginePluginSymbolsPaths &  engineRuntimePluginSymbolsPaths & engineExperimentalPluginSymbolsPaths & 
-  getNimForUESymbols() & userGamePluginSymbols)
+  getNimForUESymbols() & userGamePluginSymbols & enginePluginsByPathSymbols)
   .map(path => path.normalizedPath())
 
 
