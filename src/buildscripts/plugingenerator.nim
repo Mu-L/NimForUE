@@ -1,5 +1,5 @@
 
-import std/[jsonutils, json, os, strformat, strutils, sequtils, tables, hashes]
+import std/[jsonutils, json, os, strformat, strutils, sequtils, tables, hashes, paths, sugar]
 import buildcommon, buildscripts, nimforueconfig
 
 
@@ -204,8 +204,10 @@ proc getModuleBuildCsFile(name:string, platformTarget: PlatformTargetKind) : str
   #The editor one should use all the modules, while the game one should only use the modules that are not editor only.
   let userPluginModules = getUserGamePlugins({modkDefault, modkRuntime}).values.toSeq.concat
   let extraModules = 
-    (getGameUserConfigValue("gameModules", newSeq[string]()) & userPluginModules)
-    .mapIt(it.quotes)
+    (getGameUserConfigValue("gameModules", newSeq[string]()) & 
+      getGameUserConfigValue("enginePluginsByPath",  newSeq[string]()).map(pluginPath => pluginPath.lastPathPart) & 
+      userPluginModules
+    ).mapIt(it.quotes)
   var extraModulesContent = ""
   if extraModules.len > 0:
     extraModulesContent = &"""
