@@ -464,18 +464,18 @@
 
 #elif  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
 
-		virtual EPropertyVisitorControlFlow Visit(FPropertyVisitorPath& Path, void* Data, const TFunctionRef<EPropertyVisitorControlFlow(const FPropertyVisitorPath& /*Path*/, void* /*Data*/)> InFunc) const 
+		virtual EPropertyVisitorControlFlow Visit(FPropertyVisitorPath& Path, const FPropertyVisitorData& Data, const TFunctionRef<EPropertyVisitorControlFlow(const FPropertyVisitorPath& /*Path*/, const FPropertyVisitorData& /*Data*/)> InFunc) const override
 		{
 			if constexpr (TStructOpsTypeTraits<CPPSTRUCT>::WithVisitor)
 			{
-				return ((CPPSTRUCT*)Data)->Visit(Path, InFunc);
+				CPPSTRUCT* Struct = (CPPSTRUCT*)Data.PropertyData;
+				return Struct->Visit(Path, Data, InFunc);
 			}
 			else
 			{
 				return EPropertyVisitorControlFlow::StepOver;
 			}
 		}
-
 #endif
 
 #if  (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
