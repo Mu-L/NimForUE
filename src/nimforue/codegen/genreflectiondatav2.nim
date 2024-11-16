@@ -478,6 +478,11 @@ proc getProject*() : UEProject =
     let bpOnlyRules = makeImportedRuleModule(uerImportBlueprintOnly)
     let fieldsOnly =  makeImportedRuleType(uerCodeGenOnlyFields, ManuallyImportedClasses & NimDefinedTypesNames) 
 
+    # game.json: {"extraNonBpModuleNames": ["SomeModule"]}
+    # By default only BP exposed properties are accessible in Nim, i.e. "bpOnly" defaults to true
+    # Modules specified in "extraNonBpModuleNames", will have their types' fields' 
+    #   accessible in Nim and accessors generated for them. 
+    # see uemeta toUEField proc for FPropertyPtr where a rule check is done to expose a field in Nim.
     let nonBp =  @["EnhancedInput", "GameplayAbilities"] & getGameUserConfigValue("extraNonBpModuleNames", newSeq[string]())
     UE_Log &"Non BP modules: {nonBp}"
     proc getRulesForPkg(packageName:string) : seq[UEImportRule] = 
