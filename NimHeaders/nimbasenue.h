@@ -182,7 +182,7 @@ __AVR__
 
 /* ------------------------------------------------------------------- */
 #ifdef  __cplusplus
-#  define NIM_EXTERNC 
+#  define NIM_EXTERNC extern "C"
 #else
 #  define NIM_EXTERNC
 #endif
