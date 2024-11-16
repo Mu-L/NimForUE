@@ -29,6 +29,14 @@ proc loadNueLib*(libName, nextPath: string, loadedFrom:NueLoadedFrom) =
 proc getPluginFromPath(entry: string): string =
     entry.lastPathPart
 
+proc getEnginePluginModules(): seq[string] = 
+  let conf = getNimForUEConfig()
+  let enginePluginDir = conf.engineDir / "Plugins"
+  let enginePluginPaths = getGameUserConfigValue("enginePluginsByPath", newSeq[string]())
+  
+  for pluginPath in enginePluginPaths:
+    result.add getUPluginModules(enginePluginDir / pluginPath, {modkAll})
+
 {.push  exportc, cdecl, dynlib.}
 
 proc registerLogger*(inLogger: LoggerSignature)  =
@@ -42,8 +50,8 @@ proc getGameModules(withUEEditor: bool): cstring =
     let kinds = if withUEEditor: {modkAll} else: {modkDefault, modkRuntime}
     let userPluginModules: seq[string] = getUserGamePlugins(kinds).values.toSeq.concat
     let gameModules = getGameUserConfigValue("gameModules",  newSeq[string]()) & userPluginModules    
-    let gameSubmodules = getGameUserConfigValue("enginePluginsByPath",  newSeq[string]()).map(getPluginFromPath)
-    let gameModulesStr = (gameModules & gameSubmodules).join(",")
+    let enginePluginModules = getEnginePluginModules() #getGameUserConfigValue("enginePluginsByPath",  newSeq[string]()).map(getPluginFromPath)
+    let gameModulesStr = (gameModules & enginePluginModules).join(",")
     return gameModulesStr.cstring    
 
 proc setWinCompilerSettings(sdkVersion, compilerVersion, toolchainDir:cstring) =
