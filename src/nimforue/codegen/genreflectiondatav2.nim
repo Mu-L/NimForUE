@@ -512,7 +512,6 @@ proc generateProject*(forceGeneration = false) =
 
     measureTime "Generate Project":  
       var project = getProject()  
-      return
       
       # measureTime "generateUEProject":
       #   project = generateUEProject(getProject())
