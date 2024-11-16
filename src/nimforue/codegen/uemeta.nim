@@ -313,7 +313,6 @@ func tryParseJson[T](jsonStr: string): Option[T] =
 
 func getFirstBpExposedParent(parent: UClassPtr): UClassPtr =
   if parent != nil and parent.isBpExposed():
-    UE_Log &"Parent {parent.getName()} is exposed"
     return parent
   # else:    
     # UE_Log &"Parent {parent} is NOT exposed"
@@ -325,13 +324,13 @@ func getFirstBpExposedParent(parent: UClassPtr): UClassPtr =
 
 
 
-func toUEType*(iface: UInterfacePtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]= @[]): Option[UEType] =
+func toUEType*(iface: UInterfacePtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
   #interfaces are not supported yet. They are only take into account for checking deps of a module
   let name = "U" & iface.getName()
   UE_Log &"Found interface {name}"
   some UEType(name: name, kind: uetInterface) #TODO gather function signatures
 
-func toUEType*(cls: UClassPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]= @[]): Option[UEType] =
+func toUEType*(cls: UClassPtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
   let storedUEType = 
     cls.getMetadata(UETypeMetadataKey)
        .flatMap((x:FString)=>tryParseJson[UEType](x))
@@ -353,7 +352,6 @@ func toUEType*(cls: UClassPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[s
 
   let parentName = parent.map(p=>p.getPrefixCpp() & p.getName()).get("")
   var hasDefaultCtor = true
-
 
   let namePrefixed = cls.getPrefixCpp() & cls.getName()
   let shouldBeIgnored = (name: string, rule: UEImportRule) => name in rule.affectedTypes and rule.target == uertType and rule.rule == uerIgnore
@@ -383,7 +381,7 @@ func toUEType*(cls: UClassPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[s
     none(UEType)
 
 
-proc toUEType*(str: UScriptStructPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]= @[]): Option[UEType] =
+proc toUEType*(str: UScriptStructPtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
   #same as above
   let storedUEType = 
     str.getMetadata(UETypeMetadataKey)
@@ -428,7 +426,7 @@ proc toUEType*(str: UScriptStructPtr, rules: seq[UEImportRule] = @[], pchInclude
     none(UEType)
 
 
-proc toUEType*(del: UDelegateFunctionPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]= @[]): Option[UEType] =
+proc toUEType*(del: UDelegateFunctionPtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
   let storedUEType = 
     del.getMetadata(UETypeMetadataKey)
        .flatMap((x:FString)=>tryParseJson[UEType](x))
@@ -465,7 +463,7 @@ proc toUEType*(del: UDelegateFunctionPtr, rules: seq[UEImportRule] = @[], pchInc
   #     UE_Log &"Delegate {name} is not exposed to BP"
   #     none(UEType)
 
-func toUEType*(uenum: UEnumPtr, rules: seq[UEImportRule] = @[],  pchIncludes:seq[string]= @[]): Option[UEType] = #notice we have to specify the type because we use specific functions here. All types are Nim base types
+func toUEType*(uenum: UEnumPtr, rules: seq[UEImportRule] = @[]): Option[UEType] = #notice we have to specify the type because we use specific functions here. All types are Nim base types
     # let fields = getFPropsFromUStruct(enum).map(toUEField)
   let storedUEType = 
     uenum.getMetadata(UETypeMetadataKey)
@@ -496,18 +494,18 @@ func toUEType*(uenum: UEnumPtr, rules: seq[UEImportRule] = @[],  pchIncludes:seq
     UE_Warn &"Enum {name} is not exposed to BP"
     none(UEType)
 
-func convertToUEType[T](obj: UObjectPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]): Option[UEType] =
-  tryUECast[T](obj).flatMap((val: ptr T)=>toUEType(val, rules, pchIncludes))
+func convertToUEType[T](obj: UObjectPtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
+  tryUECast[T](obj).flatMap((val: ptr T)=>toUEType(val, rules))
 
-proc getUETypeFrom*(obj: UObjectPtr, rules: seq[UEImportRule] = @[], pchIncludes:seq[string]): Option[UEType] =
+proc getUETypeFrom*(obj: UObjectPtr, rules: seq[UEImportRule] = @[]): Option[UEType] =
   if obj.getFlags() & RF_ClassDefaultObject == RF_ClassDefaultObject:
     return none[UEType]()
   
-  convertToUEType[UClass](obj, rules, pchIncludes)
-    .chainNone(()=>convertToUEType[UScriptStruct](obj, rules, pchIncludes))
-    .chainNone(()=>convertToUEType[UInterface](obj, rules, pchIncludes))
-    .chainNone(()=>convertToUEType[UEnum](obj, rules, pchIncludes))
-    .chainNone(()=>convertToUEType[UDelegateFunction](obj, rules, pchIncludes))
+  convertToUEType[UClass](obj, rules)
+    .chainNone(()=>convertToUEType[UScriptStruct](obj, rules))
+    .chainNone(()=>convertToUEType[UInterface](obj, rules))
+    .chainNone(()=>convertToUEType[UEnum](obj, rules))
+    .chainNone(()=>convertToUEType[UDelegateFunction](obj, rules))
 
 func getFPropertiesFrom*(ueType: UEType): seq[FPropertyPtr] =
   case ueType.kind:
@@ -663,13 +661,13 @@ func getModuleHeader*(module: UEModule): seq[string] =
     .mapIt(&"""#include "{it}" """)
 
 
-proc getUETypeByNameFromUE(name:string, rules:seq[UEImportRule], pchIncludes:seq[string]= @[]) : Option[UEType] = 
+proc getUETypeByNameFromUE(name:string, rules:seq[UEImportRule]) : Option[UEType] = 
   let obj = getUnrealTypeFromNameAsUObject[UStruct](name.removeFirstLetter().removeLastLettersIfPtr())
               .chainNone(()=>getUnrealTypeFromNameAsUObject[UEnum](name.extractTypeFromGenericInNimFormat("TEnumAsByte")))
               .chainNone(()=>getUnrealTypeFromNameAsUObject[UInterface](name.extractTypeFromGenericInNimFormat("TScriptInterface").removeFirstLetter()))
               .chainNone(()=>getUnrealTypeFromNameAsUObject[UStruct](name))
               
-  result = obj.map(it=>getUETypeFrom(it, rules, pchIncludes)).flatten()
+  result = obj.map(it=>getUETypeFrom(it, rules)).flatten()
   
 
 
@@ -694,13 +692,13 @@ proc getDepsFromTypes*(name: string, types : seq[UEType], excludeDeps: seq[strin
     .filterIt(it != name and it notin excludeDeps)
 
 
-proc toUEModule*(pkg: UPackagePtr, rules: seq[UEImportRule], excludeDeps: seq[string], includeDeps: seq[string], pchIncludes:seq[string]= @[]): seq[UEModule] =
-  UE_Log &"Generating module for {pkg.getShortName()} pchIncludes: {pchIncludes.len}"
+proc toUEModule*(pkg: UPackagePtr, rules: seq[UEImportRule], excludeDeps: seq[string], includeDeps: seq[string]): seq[UEModule] =
+  UE_Log &"Generating module for {pkg.getShortName()}"
   let allObjs = pkg.getAllObjectsFromPackage[:UObject]()
   var name = pkg.getShortName()
 
   var initialTypes = allObjs.toSeq()
-    .map((obj: UObjectPtr) => getUETypeFrom(obj, rules, pchIncludes))
+    .map((obj: UObjectPtr) => getUETypeFrom(obj, rules))
     .sequence()
   
   if pkg.isEditorOnly:

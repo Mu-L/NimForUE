@@ -380,7 +380,7 @@ proc fixCycles*(project: UEProject, commonModule : var UEModule, cycleProblems :
   return project
 
 
-proc saveProject*(project:UEProject) = 
+proc saveProject*(project:UEProject) =
   let config = getNimForUEConfig()
   
   let codeTemplate = """
@@ -457,8 +457,6 @@ proc getModules*(moduleName:string, onlyBp : bool) : seq[UEModule] =
       pkg.map((pkg:UPackagePtr) => pkg.toUEModule(rules, @[], @[])).get(@[])
 
 proc getProject*() : UEProject = 
-  # if ueProjectRef.isNil():
-    
   let pluginModules = getAllInstalledPlugins() 
     .mapIt(getAllModuleDepsForPlugin(it).mapIt($it).toSeq())
     .flatten()
@@ -470,13 +468,11 @@ proc getProject*() : UEProject =
   let ueModules = 
     @["Engine", "Slate", "SlateCore", "PhysicsCore", "Chaos", "InputCore", "UMG", "GameplayAbilities", "EnhancedInput", "AssetRegistry"] &
     userModules
-  
+
   let projectModules = (gameModules & pluginModules & ueModules).deduplicate()
-  # let projectModules = ueModules #(gameModules & pluginModules & ueModules).deduplicate()
 
-
-    
   var project = UEProject()
+
   measureTime "Getting the project":
     let bpOnly = getGameUserConfigValue("bpOnly", true)
     let bpOnlyRules = makeImportedRuleModule(uerImportBlueprintOnly)
@@ -492,14 +488,12 @@ proc getProject*() : UEProject =
       if packageName in moduleImportRules: 
         moduleImportRules[packageName] & fieldsOnly & ruleBp
       else: @[fieldsOnly] & ruleBp
-    
-    
 
     project.modules = 
       projectModules
         .mapIt(tryGetPackageByName(it))
         .sequence
-        .mapIt(toUEModule(it, getRulesForPkg(it.getShortName()), @[], @[], getPCHIncludes()))
+        .mapIt(toUEModule(it, getRulesForPkg(it.getShortName()), @[], @[]))
         .flatten()
 
     UE_Log &"Project has {project.modules.len} modules"
@@ -510,9 +504,10 @@ proc generateProject*(forceGeneration = false) =
     if not forceGeneration:
       if not isRunningCommandlet():
         return
-    
+
     measureTime "Generate Project":  
       var project = getProject()  
+      return
       
       # measureTime "generateUEProject":
       #   project = generateUEProject(getProject())

@@ -189,10 +189,7 @@ uClass AActorCodegen of AActor:
       if cls.isNil():
         UE_Error "Class is null"
         return
-      var pchIncludes = newSeq[string]()
-      if self.bUseIncludesInPCH:
-        pchIncludes = getPCHIncludes()
-      let ueType = cls.toUEType(@[], pchIncludes)
+      let ueType = cls.toUEType(@[])
       UE_Log $ueType
       
     proc dumpMetadatas() = 
@@ -411,7 +408,7 @@ uClass AActorCodegen of AActor:
 
       let allObjs = pkg.get.getAllObjectsFromPackage[:UObject]()
       let initialTypes = allObjs.toSeq()
-      .map((obj: UObjectPtr) => getUETypeFrom(obj, @[], @[]))
+      .map((obj: UObjectPtr) => getUETypeFrom(obj, @[]))
       .sequence()
 
       let submodules = getSubmodulesForTypes(self.moduleName, initialTypes, @[])
@@ -497,7 +494,7 @@ uClass AActorCodegen of AActor:
         else: 
           @[]
 
-      let modules = pkg.map((pkg:UPackagePtr) => pkg.toUEModule(rules, @[], @[], getPCHIncludes())).get(@[])
+      let modules = pkg.map((pkg:UPackagePtr) => pkg.toUEModule(rules, @[], @[])).get(@[])
       # UE_Log $modules.head().map(x=>x.types.mapIt(it.name))
       # UE_Log "Len " & $modules.len
       # UE_Log "Types " & $modules.head().map(x=>x.types).get(@[]).len
@@ -520,7 +517,7 @@ uClass AActorCodegen of AActor:
 
     proc showPCHTypes() = 
       let pkg = tryGetPackageByName(self.moduleName)
-      let modules = pkg.map((pkg:UPackagePtr) => pkg.toUEModule(@[], @[], @[], getPCHIncludes())).get(@[])
+      let modules = pkg.map((pkg:UPackagePtr) => pkg.toUEModule(@[], @[], @[])).get(@[])
       let ueProject = UEProject(modules: modules)
       let pchTypes = modules.mapIt(it.types).flatten.filterIt(it.isInPCH).mapIt(it.name)
       UE_Log "PCH Types:" & $pchTypes

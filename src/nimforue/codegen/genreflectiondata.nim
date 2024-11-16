@@ -9,10 +9,14 @@ const pluginDir {.strdefine.}: string = ""
 
 proc getGameModules*(): seq[string] =
   try:        
-    let projectJson = readFile(GamePath()).parseJson()
+
+    let path = GamePath(withQuotes=false)
+    if not fileExists(path):
+      UE_Error &"Game path not found '{path}'"
+      return @[]
+    let projectJson = readFile(GamePath(withQuotes=false)).parseJson()
     let modules = projectJson["Modules"]
                     .mapIt(it["Name"].jsonTo(string))
-                   
     return modules
   except:
     let e : ref Exception = getCurrentException()
@@ -24,7 +28,7 @@ proc getGameModules*(): seq[string] =
 proc getAllInstalledPlugins*(): seq[string] =
   try:        
     let excludePlugins = getGameUserConfigValue("exclude", newSeq[string]())
-    let path = GamePath().strip(chars ={'"'})
+    let path = GamePath(withQuotes=false)
     if not fileExists(path):
       UE_Error &"Game path not found '{path}'"
       return @[]
@@ -84,7 +88,7 @@ proc genReflectionData*(gameModules, plugins: seq[string]): UEProject =
    
     if module notin modCache:# or module in modCache.values.toSeq.mapit(it.name): #if it's in the cache the virtual modules are too.
       let ueMods = tryGetPackageByName(module.split("/")[0])
-            .map((pkg:UPackagePtr) => pkg.toUEModule(rules, excludeDeps, includeDeps, getPCHIncludes()))
+            .map((pkg:UPackagePtr) => pkg.toUEModule(rules, excludeDeps, includeDeps))
             .get(newSeq[UEModule]())
 
       if ueMods.isEmpty():
