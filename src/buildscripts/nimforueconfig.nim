@@ -349,7 +349,9 @@ proc getUserGamePlugins*(kinds: set[UEPluginModuleKind]): Table[string, seq[stri
 proc getEnginePluginsByPath*(enginePluginDir: string): Table[string, seq[string]] = #pluginPath: modules
   let enginePluginPaths = getGameUserConfigValue("enginePluginsByPath", newSeq[string]())
   for pluginPath in enginePluginPaths:
-    let modules = getUPluginModules(enginePluginDir / pluginPath, {modkAll})
+    #pluginPath could contain a '/' or a '\'. We normalize it here
+    var normalizedPluginPath = pluginPath.replace("\\", "/").split("/").foldl(a / b, "")
+    let modules = getUPluginModules(enginePluginDir / normalizedPluginPath, {modkAll})
     if modules.len > 0:
       result[enginePluginDir / pluginPath] = modules
 
