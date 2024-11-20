@@ -10,6 +10,7 @@ type
   CppTypeInfo* = object
     name* : string #Name of the type FSomeType USomeType
     cppDefinitionLine : string #The line where the type is defined. This will be the body at some point
+    needsObjectInitializerCtor*: bool
 
 proc getIncludesFromHeader(path, header: string): seq[string] = 
   #path only passed to show better errors
@@ -209,6 +210,28 @@ proc readHeader(searchPaths:seq[string], header:string) : Option[string]  =
   if result.isNone and header.split("/").len>1:    
     return readHeader(searchPaths, header.split("/")[^1])
 
+func getContentBetween(content: string, startChar = '{', endChar = '}'): string =
+  #It assumes startChar are not nested. If another startChar is found, it will count it but it will continue until it finds the endChar with the same nesting level.
+  var level = 0 
+  result = ""
+  for c in content:
+    if c == startChar: inc level
+    elif c == endChar: dec level
+    if level > 0: result.add(c)
+    if level == 0 and c == endChar: break
+
+  return result
+
+func doesClassHasConstructorInitializerAOnly(content, clsName: string): bool =
+  let ctorLines = content.splitLines().filterIt(clsName in it)
+  #Notive assigments (default value) makes the ctor default
+  let isFObjectInitilalizerCtor = ctorLines.mapIt(getContentBetween(it, '(', ')')).filterIt("FObjectInitializer" in it and "=" notin it and "<" notin it).len > 0 
+  result = ctorLines.len == 1 and isFObjectInitilalizerCtor
+  if result:
+    debugEcho clsName, "has FObjectInitializer ctor"
+  if clsName == "UStateTreeConditionBlueprintBase":
+    debugEcho "doesClassHasConstructorInitializerAOnly", content
+
 proc getUClassesNamesFromHeaders(cppCode:string) : seq[CppTypeInfo] =   
   let lines = cppCode.splitLines()
   #Two cases (for UStructs and FStrucs) Need to do UEnums
@@ -222,7 +245,10 @@ proc getUClassesNamesFromHeaders(cppCode:string) : seq[CppTypeInfo] =
       if needToContains.mapIt(line.contains(it)).foldl(a and b, true):
         let separator = if line.contains("final") : "final" else: ":"
         var clsName = line.split(separator)[0].strip.split(" ")[^1] 
-        result.add(CppTypeInfo(name:clsName, cppDefinitionLine:line))
+        let clsContent = lines[idx..^1].join("\n").getContentBetween('{', '}')
+        
+        let needsObjectInitializerCtor = clsContent.doesClassHasConstructorInitializerAOnly(clsName)
+        result.add(CppTypeInfo(name:clsName, cppDefinitionLine:line, needsObjectInitializerCtor:needsObjectInitializerCtor))
 
   func getTypeAfterUType(utype, typ:string) : seq[CppTypeInfo] = 
     for idx, line in enumerate(lines):  

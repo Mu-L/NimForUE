@@ -334,8 +334,11 @@ proc uClassImpl*(name:NimNode, body:NimNode, withForwards = true): (NimNode, Nim
       result = (typeSection, members, funcInClass)
 
     else:
-      #this may cause a comp error if the file doesnt exist. Make sure it exists first. #TODO PR to fix this 
       ueType.isParentInPCH = ueType.parent in getAllPCHTypes()
+
+      #this may cause a comp error if the file doesnt exist. Make sure it exists first. #TODO PR to fix this 
+      if not ueType.hasObjInitCtor and  ueType.isParentInPCH:
+        ueType.hasObjInitCtor = getAllPCHTypes()[ueType.parent].needsObjectInitializerCtor
       addVMType ueType
       #Call is equivalent with identDefs
       let nimFields = body.children.toSeq
