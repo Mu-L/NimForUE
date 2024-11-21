@@ -13,6 +13,8 @@ proc addUnique*[T](arr:TArray[T], value:T) {.importcpp: "#.AddUnique(#)".}
 proc append*[T](a, b:TArray[T]) {.importcpp: "#.Append(#)".}
 func reserve*[T](arr:TArray[T], value:Natural) {.importcpp: "#.Reserve(#)".}
 func indexOf*[T](arr:TArray[T], value:T): int32 {.importcpp: "#.IndexOfByKey(#)"}
+func pop*[T](arr:TArray[T]): T {.importcpp: "#.Pop()"}
+func push*[T](arr:TArray[T], value: T): T {.importcpp: "#.Push()"}
 
 
 # proc `[]`*[T](arr:TArray[T], i: int): var T {. inline, noSideEffect.} = arr[i.int32]
@@ -124,3 +126,11 @@ proc flatten*[T](arr: TArray[TArray[T]]): TArray[T] =
 proc addUnique*[T](arr: var TArray[T], value:T) = 
   if value notin arr:
     arr.add value
+
+proc reverse*[T](arr: var TArray[T]) =
+  var x = 0
+  var y = system.max(0, arr.num() - 1)
+  while x < y:
+    swap(arr[x], arr[y])
+    inc x
+    dec y
