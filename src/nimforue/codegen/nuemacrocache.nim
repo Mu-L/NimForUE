@@ -8,6 +8,7 @@ const mcDelegates = CacheSeq"delegates"
 
 const mcVMTypes = CacheSeq"vmTypes"
 const mcVMUFuncs = CacheSeq"vmUFuncs" #since ufuncs are detached from types we keep track them here. 
+const mcClassWithObjInitCtor = CacheSeq"classWithObjInitCtor"
 
 func contains(cs: CacheSeq, node:NimNode) : bool = 
     for n in cs:
@@ -62,7 +63,6 @@ proc addVMUFunc*(ufun:UEField) =
     #     mcVMUFuncs[ufun.typeName] = newStrLitNode $fns.toJson()
     # else:
     #     mcVMUFuncs[ufun.typeName] = nnkStmtList.newTree newStrLitNode $(@[ufun].toJson())
-    
 
 proc getVMTypes*(needsFields: bool = true) : seq[UEType] =     
     for uet in mcVMTypes:
@@ -79,5 +79,12 @@ proc getVMTypes*(needsFields: bool = true) : seq[UEType] =
           if fn.typeName == uet.name:
             uet.fields.add(fn)
         
-      
-    
+func addClassWithObjInitCtor*(typeName: string) = 
+    mcClassWithObjInitCtor.add(newLit typeName)
+
+proc classHasObjInitCtor*(typeName: string): bool = 
+    for lit in mcClassWithObjInitCtor:
+        if lit.strVal == typeName:
+            return true
+    false
+

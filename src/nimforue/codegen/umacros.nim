@@ -282,6 +282,18 @@ proc generateFieldNotifySetter(uet: UEType, field: UEField): NimNode =
       let val = cast[ptr propType](value)
       obj.propName = val[]
 
+
+proc setHasObjInitCtor(ueType: var UEType) =
+  if classHasObjInitCtor(ueType.parent):
+    ueType.hasObjInitCtor = true
+  else: 
+    let pchTypes = getAllPCHTypes()
+    ueType.isParentInPCH = ueType.parent in pchTypes
+    if not ueType.hasObjInitCtor and ueType.isParentInPCH:
+      ueType.hasObjInitCtor = pchTypes[ueType.parent].needsObjectInitializerCtor
+  if ueType.hasObjInitCtor:
+    addClassWithObjInitCtor(ueType.name)
+
 type UClassNode = object
   className: string
   parent: string
@@ -334,12 +346,9 @@ proc uClassImpl*(name:NimNode, body:NimNode, withForwards = true): (NimNode, Nim
       result = (typeSection, members, funcInClass)
 
     else:
-      ueType.isParentInPCH = ueType.parent in getAllPCHTypes()
-
-      #this may cause a comp error if the file doesnt exist. Make sure it exists first. #TODO PR to fix this 
-      if not ueType.hasObjInitCtor and  ueType.isParentInPCH:
-        ueType.hasObjInitCtor = getAllPCHTypes()[ueType.parent].needsObjectInitializerCtor
-      addVMType ueType
+      if ueType.kind == uetClass:
+        setHasObjInitCtor(ueType)
+      # addVMType ueType #Not needed as we are not using the VM. Let it here for reference
       #Call is equivalent with identDefs
       let nimFields = body.children.toSeq
                           .filterIt(it.kind == nnkCall and it[0].strVal() notin @ValidUprops & @["default", "defaults"] & @ValidUFuncs)
