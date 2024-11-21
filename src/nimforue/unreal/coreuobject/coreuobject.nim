@@ -422,6 +422,9 @@ type
 
   # StructUtils
   FInstancedStruct* {.importcpp.} = object
+  
+  # Data Validation
+  FDataValidationContext* {.importcpp.} = object
 
   ESearchCase* {.size: sizeof(uint8), pure.} = enum
     CaseSensitive, IgnoreCase, ESearchCase_MAX
@@ -469,7 +472,7 @@ type
   EAppMsgType* {.size: sizeof(uint8), pure.} = enum
     Ok, YesNo, OkCancel, YesNoCancel, CancelRetryContinue, YesNoYesAllNoAll,
     YesNoYesAllNoAllCancel, YesNoYesAll, EAppMsgType_MAX
-  EDataValidationResult* {.size: sizeof(uint8), pure.} = enum
+  EDataValidationResult* {.importcpp, size: sizeof(uint8), pure.} = enum
     Invalid, Valid, NotValidated, EDataValidationResult_MAX
   EBulkDataLockFlags{.importcpp.} = enum
     LOCK_READ_ONLY = 1
@@ -556,3 +559,8 @@ proc lock*(bulkData: FByteBulkData, lockFlags: EBulkDataLockFlags) {.importcpp: 
 proc lockReadOnly*(bulkData: FByteBulkData): pointer {.importcpp: "const_cast<void*>(#.LockReadOnly())".}
 proc unlock*(bulkData: FByteBulkData) {.importcpp: "#.Unlock()".}
 proc realloc*(bulkData: FByteBulkData, size: int32): ptr uint8 {.importcpp: "#.Realloc(@)".}
+
+# Data Validation
+proc addWarning*(context: FDataValidationContext, text:FText) {.importcpp:"#.AddWarning(#)".}
+proc addError*(context: FDataValidationContext, text:FText) {.importcpp:"#.AddError(#)".}
+proc combineDataValidationResults*(result1, result2: EDataValidationResult): EDataValidationResult {.importcpp:"CombineDataValidationResults(@)".}

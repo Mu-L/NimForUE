@@ -55,6 +55,7 @@
 
 
 #include "Misc/AutomationTest.h"
+#include "Misc/DataValidation.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/UserDefinedEnum.h"
 #include "Components/ActorComponent.h"
