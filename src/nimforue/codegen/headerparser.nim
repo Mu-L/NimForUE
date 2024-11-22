@@ -222,15 +222,13 @@ func getContentBetween(content: string, startChar = '{', endChar = '}'): string 
 
   return result
 
-func doesClassHasConstructorInitializerAOnly(content, clsName: string): bool =
+func doesClassHaveConstructorInitializerOnly(content, clsName: string): bool =
   let ctorLines = content.splitLines().filterIt(clsName in it)
   #Notive assigments (default value) makes the ctor default
   let isFObjectInitilalizerCtor = ctorLines.mapIt(getContentBetween(it, '(', ')')).filterIt("FObjectInitializer" in it and "=" notin it and "<" notin it).len > 0 
   result = ctorLines.len == 1 and isFObjectInitilalizerCtor
   if result:
-    debugEcho clsName, "has FObjectInitializer ctor"
-  if clsName == "UStateTreeConditionBlueprintBase":
-    debugEcho "doesClassHasConstructorInitializerAOnly", content
+    debugEcho clsName, " has FObjectInitializer ctor"
 
 proc getUClassesNamesFromHeaders(cppCode:string) : seq[CppTypeInfo] =   
   let lines = cppCode.splitLines()
@@ -247,7 +245,7 @@ proc getUClassesNamesFromHeaders(cppCode:string) : seq[CppTypeInfo] =
         var clsName = line.split(separator)[0].strip.split(" ")[^1] 
         let clsContent = lines[idx..^1].join("\n").getContentBetween('{', '}')
         
-        let needsObjectInitializerCtor = clsContent.doesClassHasConstructorInitializerAOnly(clsName)
+        let needsObjectInitializerCtor = clsContent.doesClassHaveConstructorInitializerOnly(clsName)
         result.add(CppTypeInfo(name:clsName, cppDefinitionLine:line, needsObjectInitializerCtor:needsObjectInitializerCtor))
 
   func getTypeAfterUType(utype, typ:string) : seq[CppTypeInfo] = 
