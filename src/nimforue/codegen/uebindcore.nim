@@ -344,7 +344,7 @@ func fromNimNodeToMetadata*(node : NimNode) : seq[UEMetadata] =
     case node.kind:
     of nnkIdent:
         @[makeUEMetadata(node.strVal())]
-    of nnkExprEqExpr:
+    of nnkExprEqExpr, nnkExprColonExpr:
         let key = node[0].strVal()
         case node[1].kind:
         of nnkIdent, nnkStrLit:
@@ -376,7 +376,6 @@ func getMetasForType*(body:NimNode) : seq[UEMetadata] {.compiletime.} =
       .filterIt(it.kind==nnkPar or it.kind == nnkTupleConstr)
       .mapIt(it.children.toSeq())
       .flatten()
-      .filterIt(it.kind!=nnkExprColonExpr)
       .map(fromNimNodeToMetadata)
       .flatten()
 
@@ -443,7 +442,7 @@ const ValidUprops* = ["uprop", "uprops", "uproperty", "uproperties"]
 const ValidUFuncs* = ["ufunc", "ufuncs", "ufunction", "ufunctions"]
 
 func fromUPropNodeToField(node : NimNode, ueTypeName:string) : seq[UEField] = 
-    let validNodesForMetas = [nnkIdent, nnkExprEqExpr]
+    let validNodesForMetas = [nnkIdent, nnkExprEqExpr, nnkExprColonExpr]
     let metasAsNodes = node.childrenAsSeq()
                     .filterIt(it.kind in validNodesForMetas or (it.kind == nnkIdent and it.strVal().toLower() notin ValidUprops))
     let ueMetas = metasAsNodes.map(fromNimNodeToMetadata).flatten().tail()
