@@ -42,8 +42,8 @@ proc vtableConstructorStatic*[T](helper : var FVTableHelper): UObjectPtr {.cdecl
 
 proc defaultConstructorStatic*[T](initializer: var FObjectInitializer) {.cdecl.} =
   const typeName = typetraits.name typeof(T)
-  const ueType = getVMTypes(false).filter(t=>t.name == typeName).head() #Compile time only. This may be expensive. Make it faster (but measure first)
-  when ueType.isSome() and ueType.get.hasObjInitCtor or T is UUserWidget: #The type needs to be in sync with umacros 
+#   const ueType = getVMTypes(false).filter(t=>t.name == typeName).head() #Compile time only. This may be expensive. Make it faster (but measure first)
+  when typeName.classHasObjInitCtor or T is UUserWidget: #The type needs to be in sync with umacros 
     newInstanceInAddrWithInit[T](initializer.getObj(), initializer)
   else:
     newInstanceInAddr[T](initializer.getObj())
@@ -748,7 +748,9 @@ const manualTypes = @[
 ]
 static:
   for uet in manualTypes:
-    addVMType uet
+    # addVMType uet #Not needed as we dont use the vm
+    if uet.hasObjInitCtor:
+      addClassWithObjInitCtor(uet.name)
 
 proc addManualUClasses() = 
     #TODO find a way to do this automatically without involving a macro.
