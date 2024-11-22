@@ -348,7 +348,7 @@ proc uClassImpl*(name:NimNode, body:NimNode, withForwards = true): (NimNode, Nim
     else:
       if ueType.kind == uetClass:
         setHasObjInitCtor(ueType)
-      # addVMType ueType #Not needed as we are not using the VM. Let it here for reference
+      addVMType ueType #ueemit.nim defaultContructorStatic relies on this to get the ueType to check for hasObjInitCtor
       #Call is equivalent with identDefs
       let nimFields = body.children.toSeq
                           .filterIt(it.kind == nnkCall and it[0].strVal() notin @ValidUprops & @["default", "defaults"] & @ValidUFuncs)
