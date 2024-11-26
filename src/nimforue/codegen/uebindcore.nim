@@ -438,7 +438,7 @@ func fromStringAsMetaToFlag(meta:seq[string], preMetas:seq[UEMetadata], ueTypeNa
         metadata = metas & @[attachs[0], makeUEMetadata(SocketMetadataKey, attachs[1].value)]
     (flags, metadata)
 
-const ValidUprops* = ["uprop", "uprops", "uproperty", "uproperties"]
+const ValidUProps* = ["uprop", "uprops", "uproperty", "uproperties"]
 const ValidUFuncs* = ["ufunc", "ufuncs", "ufunction", "ufunctions"]
 
 func fromUPropNodeToField(node : NimNode, ueTypeName:string) : seq[UEField] = 
@@ -450,7 +450,6 @@ func fromUPropNodeToField(node : NimNode, ueTypeName:string) : seq[UEField] =
                     .filterIt(it.kind == nnkIdent)
                     .mapIt(it.strVal())
                     .fromStringAsMetaToFlag(ueMetas, ueTypeName)
-
 
     proc nodeToUEField (n: NimNode)  : seq[UEField] = #TODO see how to get the type implementation to discriminate between uProp and  uDelegate
         let fieldNames = 
@@ -507,10 +506,32 @@ func fromUPropNodeToField(node : NimNode, ueTypeName:string) : seq[UEField] =
                     .flatten()
     ueFields
 
+func unwrapObjConstrForCall*(n: NimNode) : NimNode =
+  # unwrap nnkObjConstr to support exprcolonexpr in metas
+  n.expectKind(nnkCall)
+  if n[0].kind == nnkIdent: #using expreqexpr
+    n
+  elif n[0].kind == nnkObjConstr: #using exprcolonexpr
+    let newCall = nnkCall.newTree(n[0].childrenAsSeq) #the rest of the code expects an nnkcall without objconstr
+    newCall.add(n[^1]) #add the statementList
+    newCall
+  else:
+    error("Unexpected node kind, should be nnkIdent or nnkObjConstr ", n)
+    newEmptyNode()
+
+func filterFields*(s: seq[NimNode], ids: openarray[string], exclude: bool = false): seq[NimNode] =
+  s.filterIt(it.kind == nnkCall)
+    .map(unwrapObjConstrForCall)
+    .filterIt(if not exclude: 
+        it[0].strVal().toLower() in ids
+      else:
+        it[0].strVal().toLower() notin ids
+      )
+
 
 func getUPropsAsFieldsForType*(body:NimNode, ueTypeName:string) : seq[UEField]  = 
     body.toSeq()
-        .filter(n=>n.kind == nnkCall and n[0].strVal().toLower() in ValidUProps)
+        .filterFields(ValidUProps)
         .map(n=>fromUPropNodeToField(n, ueTypeName))
         .flatten()
 
