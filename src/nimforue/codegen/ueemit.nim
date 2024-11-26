@@ -627,7 +627,7 @@ func genDefaults*(body:NimNode): Option[NimNode] =
         else: assignment.kind.newTree(replaceFirstIdentWithSelfDotExpr(assignment[0]) & assignment[1..^1])
     result = 
         body.toSeq()
-            .filterIt(it.kind == nnkCall and it[0].strVal().toLower() in ["default", "defaults"])
+            .filterFields(["default", "defaults"])
             .head()
             .map(defaultsBlock=>(
                 nnkStmtList.newTree(
