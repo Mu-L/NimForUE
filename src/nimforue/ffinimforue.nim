@@ -123,7 +123,8 @@ proc emitNueTypes*(emitter: UEEmitterPtr, packageName:string, loadingPhase: NueL
         return false
 
 proc emitTypeFor(nueLib: NueLib, loadedFrom: NueLoadedFrom) = 
-  if isRunningCommandlet(): 
+  const IsRunningTest = when defined(test): true else: false
+  if isRunningCommandlet() and not IsRunningTest: 
     UE_Log "Running command let, dont emit types"
     return
   try:
@@ -207,20 +208,10 @@ proc onLoadingPhaseChanged(prev: NueLoadedFrom, next: NueLoadedFrom) : void {.ff
     emitTypeFor(nueLib, next)
   
 
+#[
+Create a state tree that acts as intermediary between the input and the abilities. The Input will send an event to the tree and the state will execute the ability
 
-# uEnum EEnumGuestSomethingElse: 
-#   (BlueprintType)
-#   Value1
-#   Value2
-#   Value3
-#   Value4
-#   Value5
-
-# uEnum EMyEnumCreatedInDsl:
-#     (BlueprintType)
-#     WhateverEnumValue
-#     SomethingElse
-
+]#
 uClass ANimTestGuest of AActor:
   uprops(EditAnywhere, BlueprintReadWrite):
     test: int
