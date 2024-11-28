@@ -57,6 +57,17 @@ proc onLoadingPhaseChanged*(prev: NueLoadedFrom; next: NueLoadedFrom): void {.
     let fun {.inject.} = cast[ProcType](lib().symAddr("onLoadingPhaseChanged"))
     if not fun.isNil():
       fun(prev, next)
+
+
+proc runNUETests*(): void {.exportc, cdecl, dynlib.} =
+  type
+    ProcType {.inject.} = proc (): void {.
+        cdecl.}
+  withLock libLock:
+    let fun {.inject.} = cast[ProcType](lib().symAddr("runNUETests"))
+    if not fun.isNil():
+      fun()
+
 """
 
   writeFile(GenFilePath, content)

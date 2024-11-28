@@ -85,8 +85,6 @@ proc main() =
     taskk.get().routine(taskOptions)
 
 
-
-
 # --- Define Tasks ---
 
 task guest, "Builds the main lib. The one that makes sense to hot reload.":
@@ -102,16 +100,20 @@ task guest, "Builds the main lib. The one that makes sense to hot reload.":
     extraSwitches.add "--linedir:off"
   if "noline" in taskOptions:
     extraSwitches.add "--linedir:off --linetrace:off"
+  if "test" in taskOptions:
+    extraSwitches.add "-d:test"
 
+    extraSwitches.add "--path:" & PluginDir / "src/nimforue"
+    extraSwitches.add "--path:" & PluginDir / "src/nimforue/game"
+    extraSwitches.add "--path:" & PluginDir / "src/nimforue/unreal"
+    extraSwitches.add "--path:" & PluginDir / "src/nimforue/unreal/bindings/imported"
+    
 
   let debug = "debug" in taskOptions
   if debug:
     log "Compiling with Debug"
 
   compilePlugin(extraSwitches, debug)
-
-
-
 
 
 task host, "Builds the host that's hooked to unreal":
@@ -361,17 +363,58 @@ task rebuild, "Cleans and rebuilds the unreal plugin, host, guest and cpp bindin
   gencppbindings(taskOptions)
   host(taskOptions)
 
+
+proc getCommandletCmd(cmdlet: string, options: string): string =
+  let config = getOrCreateNUEConfig()
+  when defined windows:
+    &"{config.engineDir}\\Binaries\\Win64\\UnrealEditor.exe {GamePath()} -run={cmdlet} {options}"
+  else:
+    &"{config.engineDir}/Binaries/Mac//UnrealEditor.app/Contents/MacOS/UnrealEditor  {GamePath()} -run={cmdlet} {options}"
+
 #TODO: Unify all bindings related tasks into this one
 task genbindings, "Runs the Generate Bindings commandlet":
-  let silent = if "silent" in taskOptions: "-silent" else: ""
-  when defined windows:
-    let cmd = &"{config.engineDir}\\Binaries\\Win64\\UnrealEditor.exe {GamePath()} -run=GenerateBindings {silent} " 
-    echo "Running " & cmd
-    let outPut = execProcess(cmd, getCurrentDir())
-    echo outPut.replace("\n", "") #for some reason it will output a new line per character otherwise
-  else:
-    let cmd = &"{config.engineDir}/Binaries/Mac//UnrealEditor.app/Contents/MacOS/UnrealEditor  {GamePath()} -run=GenerateBindings {silent}"
-    discard execCmd(cmd)
+  let silent: string = if "silent" in taskOptions: "-silent" else: ""
+  let cmd = getCommandletCmd("GenerateBindings", silent & " -log=Bindings.log")
+  echo "Running " & cmd
+  let outPut = execProcess(cmd, getCurrentDir())
+  echo outPut.replace("\n", "") #for some reason it will output a new line per character otherwise
+
+
+proc green*(s: string): string = "\e[32m" & s & "\e[0m"
+proc grey*(s: string): string = "\e[90m" & s & "\e[0m"
+proc yellow*(s: string): string = "\e[33m" & s & "\e[0m"
+proc red*(s: string): string = "\e[31m" & s & "\e[0m"
+proc blue*(s: string): string = "\e[34m" & s & "\e[0m"
+
+proc displayTestResults(testFile: string) =
+  let testResult = readFile(testFile).parseJson()
+  for suiteName in testResult.keys:
+    let suite = testResult[suiteName]
+    let results = suite["results"]
+    if suite["success"].to(bool):
+      echo &"""[{green("OK")}] {blue("Suite")} - {suiteName}"""
+    else: 
+      echo &"""[{red("FAIL")}] {blue("Suite")} - {suiteName}"""
+    for testName in results.keys:
+      let test = results[testName]
+      let succeed = test["success"].to(bool)
+      let message = test["message"].to(string)
+      if succeed:
+        echo &"""    [{green("OK")}] {testName}"""
+      else:
+        echo &"""    [{red("FAIL")}] {testName} 
+        {message}"""
+
+task tests, "Run the tests. The entry point is a commandlet but they are hooked into guest":
+  taskOptions["--debug"] = ""
+  taskOptions["test"] = ""  
+  guest(taskOptions)
+  let cmd = getCommandletCmd("NUETestCommandlet", "-log=Test.log")
+  # echo "Running " & cmd
+  let outPut = execProcess(cmd, getCurrentDir())
+  let testFile = PluginDir / "test.json"
+  displayTestResults(testFile)
+
 
 task genbindingsall, "Runs the Generate Bindings commandlet":
   # guest(taskOptions)
