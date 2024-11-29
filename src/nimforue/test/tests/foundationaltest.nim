@@ -12,6 +12,13 @@ uClass USampleColonMetadata of UObject:
   uprops(DisplayName: "TestInt", Category: "TestCategory", EditAnywhere):
     intValue: int
 
+  ufuncs(Static, Category: "Whatever"):
+    proc testStaticFunc(): bool = true
+
+uFunctions:
+  (self: USampleColonMetadataPtr, BlueprintCallable, Static)
+  proc detachedStaticFunc(): bool = true
+
 suite "Foundation tests":
 
   test "Should be able to create a UObject":
@@ -51,6 +58,9 @@ suite "Foundation tests":
     assert prop.getMetadata("Category").isSome()
     assert prop.getMetadata("Category").get() == "TestCategory"
     assert CPF_Edit in prop.getPropertyFlags()
-
-
-
+  
+  test "Should be able to use static ufunctions":
+    assert testStaticFunc()
+  
+  test "Should be able to use detached static ufunctions":
+    assert detachedStaticFunc()

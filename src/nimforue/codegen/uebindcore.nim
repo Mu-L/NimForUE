@@ -346,6 +346,8 @@ func fromNimNodeToMetadata*(node : NimNode) : seq[UEMetadata] =
         @[makeUEMetadata(node.strVal())]
     of nnkExprEqExpr, nnkExprColonExpr:
         let key = node[0].strVal()
+        if key == "self": #self is a special keyword for ufunctions (attaches the uFunctions to the uClass)
+          return @[]
         case node[1].kind:
         of nnkIdent, nnkStrLit:
             @[makeUEMetadata(key, node[1].strVal())]
@@ -372,12 +374,13 @@ func childrenAsSeq*(node:NimNode) : seq[NimNode] =
  
 
 func getMetasForType*(body:NimNode) : seq[UEMetadata] {.compiletime.} = 
-     body.toSeq()
-      .filterIt(it.kind==nnkPar or it.kind == nnkTupleConstr)
-      .mapIt(it.children.toSeq())
-      .flatten()
-      .map(fromNimNodeToMetadata)
-      .flatten()
+  result = body.toSeq()
+    .filterIt(it.kind==nnkPar or it.kind == nnkTupleConstr)
+    # .filterIt(it.kind==nnkPar or (it.kind == nnkTupleConstr))# and not(it[0].kind == nnkExprColonExpr and it[0][0].kind == nnkIdent and it[0][0].strVal == "self")))
+    .mapIt(it.children.toSeq())
+    .flatten()
+    .map(fromNimNodeToMetadata)
+    .flatten()
 
 
 #some metas (so far only uprops)
