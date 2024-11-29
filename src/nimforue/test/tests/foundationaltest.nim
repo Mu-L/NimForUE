@@ -4,11 +4,11 @@ import ../testutils
 
 uClass USampleObject of UObject:
   (DisplayName = "Test")
-  uprops(DisplayName = "TestInt"):
+  uprops(DisplayName = "TestInt", Category = "TestCategory"):
     intValue: int
 
 uClass USampleColonMetadata of UObject:
-  (DisplayName: "Test"):
+  (DisplayName: "Test")
   uprops(DisplayName: "TestInt", Category: "TestCategory", EditAnywhere):
     intValue: int
 
@@ -32,6 +32,8 @@ suite "Foundation tests":
     assert prop.isNotNil()
     assert prop.getMetadata("DisplayName").isSome()
     assert prop.getMetadata("DisplayName").get() == "TestInt"
+    assert prop.getMetadata("Category").isSome()
+    assert prop.getMetadata("Category").get() == "TestCategory"
 
   test "Should have the display name metadata using colon syntax":
     let obj = newUObject[USampleColonMetadata]()
@@ -48,7 +50,7 @@ suite "Foundation tests":
     assert prop.getMetadata("DisplayName").get() == "TestInt"
     assert prop.getMetadata("Category").isSome()
     assert prop.getMetadata("Category").get() == "TestCategory"
-    assert prop.getMetadata("EditAnywhere").isSome()
+    assert CPF_Edit in prop.getPropertyFlags()
 
 
 
