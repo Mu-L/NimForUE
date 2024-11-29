@@ -7,6 +7,11 @@ uClass USampleObject of UObject:
   uprops(DisplayName = "TestInt"):
     intValue: int
 
+uClass USampleColonMetadata of UObject:
+  (DisplayName: "Test"):
+  uprops(DisplayName: "TestInt", Category: "TestCategory", EditAnywhere):
+    intValue: int
+
 suite "Foundation tests":
 
   test "Should be able to create a UObject":
@@ -27,4 +32,23 @@ suite "Foundation tests":
     assert prop.isNotNil()
     assert prop.getMetadata("DisplayName").isSome()
     assert prop.getMetadata("DisplayName").get() == "TestInt"
-  
+
+  test "Should have the display name metadata using colon syntax":
+    let obj = newUObject[USampleColonMetadata]()
+
+    assert obj.getClass().getMetadata("DisplayName").isSome()
+    assert obj.getClass().getMetadata("DisplayName").get() == "Test"
+
+  test "Should have all property metadata using colon syntax":
+    let obj = newUObject[USampleColonMetadata]()
+    let prop = obj.getClass().getFPropertyByName("intValue")
+
+    assert prop.isNotNil()
+    assert prop.getMetadata("DisplayName").isSome()
+    assert prop.getMetadata("DisplayName").get() == "TestInt"
+    assert prop.getMetadata("Category").isSome()
+    assert prop.getMetadata("Category").get() == "TestCategory"
+    assert prop.getMetadata("EditAnywhere").isSome()
+
+
+
