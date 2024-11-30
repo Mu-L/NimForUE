@@ -2,7 +2,7 @@
 
 import ../coreuobject/uobject
 import ../../utils/utils
-import std/[macros, genasts, sequtils, strformat]
+import std/[macros, genasts, sequtils, strformat, strutils]
 
 type FWeakObjectPtr* {.importcpp.} = object
 
@@ -28,7 +28,7 @@ proc reset*(del : var FDelegateHandle) {.importcpp: "#.Reset()"}
 #Delegates a variadic, for now we can just return the type adhoc
 type 
   TMulticastDelegate*{.importc, nodecl.} = object
-  TMulticastDelegateOneParam*[T] {.importc:"TMulticastDelegate<void('0)>", nodecl.} = object
+  TMulticastDelegateOneParam*[T] {.importcpp:"TMulticastDelegate<void('0)>", inheritable, nodecl.} = object
   TDelegateRetOneParam*[R, T] {.importcpp:"TDelegate<'0('1)>", nodecl.} = object
 
 #TODO add macro that binds all delegates with all params
@@ -40,6 +40,7 @@ proc addStatic*[T, P, P2, P4](del: TMulticastDelegateOneParam[T], fn : proc(v:T,
 proc addStatic*[T, P, P2, P4, P5](del: TMulticastDelegateOneParam[T], fn : proc(v:T, v2:P, v3:P2, v4:P4, v5:P5) {.cdecl.}, v2:P, v3:P2, v:P4, v5:P5) : FDelegateHandle {.importcpp:"#.AddStatic(@)".}
 
 proc remove*[T](del: TMulticastDelegateOneParam[T], handle : FDelegateHandle) {.importcpp:"#.Remove(#)"}
+proc remove*[T](del: ptr TMulticastDelegateOneParam[T], handle : FDelegateHandle) {.importcpp:"#->Remove(#)"}
 
 proc addStatic*[R, T](del: TDelegateRetOneParam[R, T], fn : proc(v:T) : bool {.cdecl.}) : FDelegateHandle {.importcpp:"#.AddStatic(@)".}
 proc addStatic*[R, T, P](del: TDelegateRetOneParam[R, T], fn : proc(v:T, p:P) : bool {.cdecl.}, p:P) : FDelegateHandle {.importcpp:"#.AddStatic(@)".}
@@ -52,13 +53,9 @@ proc createStatic*[R, T, P](fn : proc(v:T, p:P) : bool {.cdecl.}, p:P) : TDelega
 proc createLambda*[T](functor: object): T {.importcpp:"'0::CreateLambda(#)" .}
 proc addLambda*(del: TMulticastDelegateOneParam, functor: object): FDelegateHandle {.importcpp:"'#.AddLambda(#)" .}
 
-proc addUObjectImpl[T](del: TMulticastDelegateOneParam, obj: ptr T, fnName: static string): FDelegateHandle = 
-  const importcpp = &"#.AddUObject(TObjectPtr<'*2>(#), &'*2::{fnName.capitalizeAscii()})"
-  proc addUObjectInner[T](del: TMulticastDelegateOneParam, obj: ptr T): FDelegateHandle {.importcpp: importcpp.}
-  addUObjectInner(del, obj)
-
 macro addUObject*(del, obj, fn: typed): untyped = 
   fn.ensureIsMember()
-  let fnName = newLit repr fn
-  genAst(del, obj, fnName):
-    addUObjectImpl(del, obj, fnName)
+  let importstr = newLit &"#.AddUObject(TObjectPtr<'*2>(#), &'*2::{fn.repr.capitalizeAscii()})"
+  genAst(del, delType = del.getTypeInst(), obj, objType = obj.getTypeInst(), f = genSym(nskProc, "addUObject"), importstr):
+    proc f(indel: delType, inobj: objType): FDelegateHandle {.importcpp: importstr.}
+    f(del, obj)

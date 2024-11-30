@@ -16,7 +16,7 @@ type
     oldValue* {.importcpp: "OldValue"}: float32
     #geModData* {.importcpp: "GEModData"}: FGameplayEffectModCallbackDataPtr # const FGameplayEffectModCallbackData*
 
-  FOnGameplayAttributeValueChange* = TMulticastDelegateOneParam[FOnAttributeChangeData]
+  FOnGameplayAttributeValueChange* {.importcpp.} = object of TMulticastDelegateOneParam[FOnAttributeChangeData]
 
 proc getAbilitySystemComponent*(asi: IAbilitySystemInterfacePtr) : UAbilitySystemComponentPtr {.importcpp: "#.GetAbilitySystemComponent()".}
 proc getAbilitySystemGlobals*() : UAbilitySystemGlobals {.importcpp: "UAbilitySystemGlobals::Get()".}
@@ -36,7 +36,7 @@ proc `==`*(a, b: FGameplayAttribute): bool {.importcpp: "(#==#)".}
 proc setNumericAttributeBase*(asc: UAbilitySystemComponentPtr, attribute: FGameplayAttribute, value: float32) {.importcpp: "#->SetNumericAttributeBase(@)".}
 proc setBaseAttributeValueFromReplication*(asc: UAbilitySystemComponentPtr, attribute: FGameplayAttribute, newValue, oldValue: FGameplayAttributeData ) {.importcpp: "#->SetBaseAttributeValueFromReplication(@)".}
 proc setReplicationMode*(asc: UAbilitySystemComponentPtr, newReplicationMode: EGameplayEffectReplicationMode) {.importcpp:"#->SetReplicationMode((EGameplayEffectReplicationMode)#)".}
-proc getGameplayAttributeValueChangeDelegate*(asc: UAbilitySystemComponentPtr, attribute: FGameplayAttribute): var FOnGameplayAttributeValueChange {.importcpp:"#->GetGameplayAttributeValueChangeDelegate(#)".}
+proc getGameplayAttributeValueChangeDelegate*(asc: UAbilitySystemComponentPtr, attribute: FGameplayAttribute): ptr FOnGameplayAttributeValueChange {.importcpp:"&(#->GetGameplayAttributeValueChangeDelegate(#))".}
 
 
 proc initAbilityActorInfo*(asc:UAbilitySystemComponentPtr, actor: AActorPtr, avatar: AActorPtr) {.importcpp: "#->InitAbilityActorInfo(#, #)".}
