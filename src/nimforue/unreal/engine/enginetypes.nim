@@ -731,6 +731,8 @@ converter toObjectType*(collisionChannel:ECollisionChannel) : EObjectTypeQuery {
 converter toTraceType*(collisionChannel:ECollisionChannel) : ETraceTypeQuery {.importcpp: "UEngineTypes::ConvertToTraceType(@)".}
 
 proc getTagName*(tag: FGameplayTag): FName {.importcpp: "#.GetTagName()".}
+proc isValid*(tag: FGameplayTag): bool {.importcpp: "#.IsValid()".}
+
 proc `$`*(tag: FGameplayTag): string = $tag.getTagName()
 proc requestGameplayTag*(tagName: FName, errorIfNotFound = true): FGameplayTag {.importcpp:"FGameplayTag::RequestGameplayTag(@)".}
 #NET

@@ -627,6 +627,7 @@ task cleandll, "Sometimes we cant make debug dlls because vcc is stuck or there 
     removeDir(folder)
   for file in binariesToDelete:
     removeFile(binariesDir / file)
+  ubuild(taskOptions)
   taskOptions["only"] = ""
   gencppbindings(taskOptions)
 
