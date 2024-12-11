@@ -49,6 +49,10 @@ iterator items*[T](arr: TArray[T]): T =
   for i in 0..(arr.num()-1):
     yield arr[i.int32]
 
+iterator pairs*[T](arr: TArray[T]): tuple[i: int, x: T] =
+  for i in 0..(arr.num()-1):
+    yield (i, arr[i.int32])
+
 iterator mitems*[T](arr: TArray[T]): var T =
   for i in 0..(arr.num()-1):
     yield arr[i.int32]
@@ -93,8 +97,15 @@ func contains*[T](arr:TArray[T], value:T): bool =
       return true
   false
 
-func `$`*[T](arr:TArray[T]) : string = $toSeq(arr)
-func `&`*[T](a, b:TArray[T]) : TArray[T] = 
+func `$`*[T](arr:TArray[T]): string = 
+  result = "["
+  for i, x in arr:
+    result.add $x
+    if i < arr.num() - 1:
+      result.add ", "
+  result.add "]"
+
+func `&`*[T](a, b:TArray[T]): TArray[T] = 
   a.append(b)
   a
 
