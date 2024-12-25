@@ -32,6 +32,8 @@ proc setStructProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:poi
   for (name, val) in rtField:
     for prop in structProps:
       if name in [prop.getName(), prop.getName.firstToLow()]:
+        if val.kind in [Struct]: 
+          structMemoryRegion = cast[pointer](cast[uint](structMemoryRegion) + prop.getOffset().uint)
         val.setProp(prop, structMemoryRegion)
 
   structMemoryRegion
