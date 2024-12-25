@@ -149,18 +149,18 @@ func makeFStructStr*(n: NimNode): string =
 
 
 #FVector2D (X=1.000,Y=1.000)
-func makeFVector2D*(vecStr:string) : FVector2D = 
+func makeFVector2D*(vecStr: string) : FVector2D = 
     var x, y : float
     if scanf(vecStr, "(X=$f,Y=$f)", x, y): FVector2D(x:x, y:y)
     else: FVector2D(x:0.0, y:0.0)
 #FVector 1.000000,1.000000,1.000000
-func makeFVector*(vecStr:string) : FVector = 
+func makeFVector*(vecStr: string) : FVector = 
     var x, y, z : float
     if scanf(vecStr, "$f,$f,$f", x, y, z): FVector(x:x, y:y, z:z)
     else: FVector(x:0.0, y:0.0, z:0.0)
 
 #FRotator 4.000000,2.000000,1.000000
-func makeFRotator*(rotStr:string) : FRotator = 
+func makeFRotator*(rotStr: string) : FRotator = 
     var pitch, yaw, roll : float
     if scanf(rotStr, "$f,$f,$f", roll, yaw, pitch): FRotator(pitch:pitch, yaw:yaw, roll:roll)
     else: FRotator(pitch:0.0, yaw:0.0, roll:0.0)

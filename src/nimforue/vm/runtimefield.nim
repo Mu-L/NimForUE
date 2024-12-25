@@ -1,10 +1,11 @@
-import std/[strformat, macros, tables, options, typetraits]
+import std/[strformat, macros, tables, options, typetraits, json, jsonutils, sequtils, strutils, genasts]
 import ../utils/utils
 when defined nuevm:
   import corevm
 else:
   import ../unreal/coreuobject/nametypes
   import ../unreal/core/ftext
+  import ../unreal/core/containers/[unrealstring, array]
 type
   TableMap*[K, V] = seq[(K, V)]
 
@@ -84,7 +85,8 @@ func makeVMDefaultConstructorName*(className: string): string = className & VMDe
 proc get*(self: UECallResult): lent RuntimeField {.inline.} = self.value.get()
 proc get*(self:UECallResult, otherwise: RuntimeField): RuntimeField {.inline.} = self.value.get(otherwise)
 
-    
+func toJsonHook*(kind: FieldKind): JsonNode = 
+  result = newJString($kind)
 
 func toTableMap*[K, V](table: Table[K, V]): seq[(K, V)] =      
   for key, val in table:
@@ -105,10 +107,18 @@ func getClassName*(ueCall: UECall): string =
 func add*(rtField : var RuntimeField, name : string, value : RuntimeField) = 
   case rtField.kind:
   of Struct:
-    rtField.structVal.add((name, value))
+    rtField.structVal.add((name, value))  
   else:    
     safe:
       raise newException(ValueError, &"rtField is not a struct. It's {rtField.kind}. Trying to add name: {name} with value: {value} To {rtField}")
+
+func add*(rtField : var RuntimeField, value: RuntimeField) = 
+  case rtField.kind:
+  of Array:
+    rtField.arrayVal.add(value)
+  else:
+    safe:
+      raise newException(ValueError, &"rtField is not an array. It's {rtField.kind}. Trying to add value: {value} To {rtField}")
 
 func getInt*(rtField : RuntimeField) : int = 
   case rtField.kind:
@@ -245,8 +255,32 @@ iterator items*(rtField : RuntimeField) : (string, RuntimeField) =
   else:
     raise newException(ValueError, "rtField is not a struct")
 
+func keys*(rtField : RuntimeField): seq[string] = 
+  case rtField.kind:
+  of Struct:
+    return rtField.structVal.mapIt(it[0])
+  else:
+    raise newException(ValueError, "rtField is not a struct")
+
 macro getField*(obj: object, fld: string): untyped =
-  newDotExpr(obj, newIdentNode(fld.strVal))
+  result = newDotExpr(obj, newIdentNode(fld.strVal))
+  # echo repr result
+macro getSetField*(obj: object, fld: string): untyped =
+  result = newDotExpr(obj, newIdentNode("set" & fld.strVal.capitalizeAscii()))
+
+macro setField*(obj: object, fld: static string, value: untyped): untyped =
+  genAst(obj, fld = ident fld, setField = ident "set" & fld.capitalizeAscii(), value = value):
+    when compiles(obj.setField):
+      obj.setField(value)
+    else:
+      obj.fld = value
+
+macro getterField*(obj: object, fld: static string): untyped =
+  genAst(obj, fld = ident fld, getter = ident "get" & fld.capitalizeAscii()):
+    when compiles(obj.getter):
+      obj.getter
+    else:
+      obj.fld
 
 type IntBased = int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | enum
 # func toRuntimeFieldHook*[T](value : T) : RuntimeField = toRuntimeField*[T](value : T)
@@ -280,13 +314,15 @@ proc fromRuntimeField*[T](value: var T, rtField: RuntimeField) =
       elif T is FText:
         value = rtField.stringVal.toText()      
     of Struct:      
-      when T is object:
-        for fieldName, v in fieldPairs(value):         
-            value.getField(fieldName) = rtField[fieldName].runtimeFieldTo(typeof(v))     
+      when T is object | tuple:
+        for fieldName, v in fieldPairs(value):     
+          setField(value, fieldName, rtField[fieldName].runtimeFieldTo(typeof(v)))
+
     of Array:
-      when T is seq:
-        for i in 0 ..< rtField.arrayVal.len:
+      when T is seq | TArray:
+        for i in 0 .. rtField.arrayVal.len:
           value.add(rtField.arrayVal[i].runtimeFieldTo(typeof(value[0])))
+
     of Map:
       when T is TableMap:
         type K = typeof(value[0][0])
@@ -306,6 +342,8 @@ proc runtimeFieldTo*(rtField : RuntimeField, T : typedesc) : T =
   fromRuntimeField(obj, rtField)
   obj
 
+
+proc toRuntimeField*(value: RuntimeField): RuntimeField = value
 proc toRuntimeField*[T](value : T) : RuntimeField = 
   when compiles(toRuntimeFieldHook(value)): 
     return toRuntimeFieldHook(value)
@@ -331,21 +369,28 @@ proc toRuntimeField*[T](value : T) : RuntimeField =
       result.kind = Map
       for (key, val) in value:
         result.mapVal.add((toRuntimeField(key), toRuntimeField(val)))
-    elif T is (array | seq | TArray | TSet):
+    elif T is (seq | TArray):
       result.kind = Array
       for val in value:
         result.arrayVal.add(toRuntimeField(val))    
     elif T is (object | tuple):
       result.kind = Struct      
       for name, val in fieldPairs(value):
-        result.structVal.add((name, toRuntimeField(val)))    
+          #We prefer the getter if it exists (it scapes the protected fields in C++ and uses the getter)         
+          result.structVal.add((name, toRuntimeField(getterField(value, name))))           
     else:
-      when compiles(UE_Error ""):
+      when compiles(UE_Error "") and defined(typename):
         UE_Error &"Unsupported {typeName} type for RuntimeField "
       else:
-        debugEcho &"ERROR: Unsupported {typeName} type for RuntimeField"
+        when defined(typeName):
+          debugEcho &"ERROR: Unsupported {typeName} type for RuntimeField"
+        else:
+          debugEcho &"ERROR: Unsupported  type for RuntimeField"
       RuntimeField()    
     # raise newException(ValueError, &"Unsupported {typename} type for RuntimeField ")
     # UE_Log &"toRuntimeField {result}"
 
 func initRuntimeField*[T](value : T) : RuntimeField = toRuntimeField(value)
+
+
+

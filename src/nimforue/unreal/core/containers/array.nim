@@ -1,6 +1,6 @@
 include ../../definitions
 import ../../../utils/utils
-import std/[sugar, enumerate]
+import std/[sugar, enumerate, json, jsonutils]
 
 type 
   TArray*[out T] {.importcpp } = object
@@ -46,11 +46,11 @@ proc `[]=`*[T](arr:TArray[T], i: Natural, val : T)  {. importcpp: "#[#]=#",  }
 
 
 iterator items*[T](arr: TArray[T]): T =
-  for i in 0..(arr.num()-1):
+  for i in 0..<arr.num():
     yield arr[i.int32]
 
 iterator pairs*[T](arr: TArray[T]): tuple[i: int, x: T] =
-  for i in 0..(arr.num()-1):
+  for i in 0..<arr.num():
     yield (i, arr[i.int32])
 
 iterator mitems*[T](arr: TArray[T]): var T =
@@ -98,6 +98,7 @@ func contains*[T](arr:TArray[T], value:T): bool =
   false
 
 func `$`*[T](arr:TArray[T]): string = 
+  # result = &"TArray[{arr.num()}]"
   result = "["
   for i, x in arr:
     result.add $x
@@ -145,3 +146,8 @@ proc reverse*[T](arr: var TArray[T]) =
     swap(arr[x], arr[y])
     inc x
     dec y
+
+proc toJsonHook*[T](arr: TArray[T]): JsonNode = 
+  result = newJArray()
+  for x in arr:
+    result.add x.toJson()

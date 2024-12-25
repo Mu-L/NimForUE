@@ -292,6 +292,11 @@ proc tryGetJson*[T](json:JsonNode, key:string) : Option[T] =
 
 
 #comp time utils
+proc getFields*(T: typedesc): seq[string] = 
+  for field, _ in fieldPairs(T()):
+    result.add(field)
+
+
 proc objectLen*(T: typedesc[object]) : int =  
   for field in default(T).fields:    
     inc result

@@ -28,7 +28,7 @@ func isByte*(prop: FPropertyPtr): bool = castField[FByteProperty](prop).isNotNil
 func isFName*(prop: FPropertyPtr): bool = castField[FNameProperty](prop).isNotNil()
 func isFText*(prop: FPropertyPtr): bool = castField[FTextProperty](prop).isNotNil()
 #object or cls props
-func isObjectBased*(prop : FPropertyPtr) : bool = castField[FObjectProperty](prop).isNotNil()
+func isObjectBased*(prop :FPropertyPtr) : bool = castField[FObjectProperty](prop).isNotNil()
 func isTMap*(prop: FPropertyPtr): bool = not castField[FMapProperty](prop).isNil()
 func isTSet*(prop: FPropertyPtr): bool = not castField[FSetProperty](prop).isNil()
 func isStruct*(prop: FPropertyPtr): bool = not castField[FStructProperty](prop).isNil()

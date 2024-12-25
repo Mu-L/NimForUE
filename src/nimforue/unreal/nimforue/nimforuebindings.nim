@@ -460,9 +460,9 @@ func getFirstCppClass*(cls:UClassPtr) : UClassPtr =
             continue
         return super
 
-proc getPropsWithFlags*(fn:UFunctionPtr, flag:EPropertyFlags) : TArray[FPropertyPtr] = 
+proc getPropsWithFlags*(struct:UStructPtr, flag:EPropertyFlags) : TArray[FPropertyPtr] = 
     let isIn = (p:FPropertyPtr) => flag in p.getPropertyFlags()
-    getFPropertiesFrom(fn).filter(isIn)
+    getFPropertiesFrom(struct).filter(isIn)
 
 proc isOutParam*(prop:FPropertyPtr) : bool = CPF_OutParm in prop.getPropertyFlags()
 

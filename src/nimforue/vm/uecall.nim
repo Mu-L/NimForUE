@@ -36,7 +36,7 @@ proc setStructProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:poi
 
   structMemoryRegion
 
-proc setProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:pointer) =
+proc setProp*(rtField: RuntimeField, prop: FPropertyPtr, memoryBlock: pointer) =
   case rtField.kind
   of Int:    
     if prop.isFName():
@@ -61,13 +61,19 @@ proc setProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:pointer) 
   of Struct:
     discard setStructProp(rtField, prop, memoryBlock)
   of Array:
-    if prop.isTArray():
+    if prop.isTArray(): 
+      let rtArray = rtField.getArray()
       let arrayProp = castField[FArrayProperty](prop)
       let innerProp = arrayProp.getInnerProp()
       let arrayHelper = makeScriptArrayHelperInContainer(arrayProp, memoryBlock)
-      arrayHelper.emptyAndAddUninitializedValues(rtField.getArray().len.int32)
-      for idx, elem in enumerate(rtField.getArray()):
+      arrayHelper.emptyAndAddUninitializedValues(rtArray.len.int32)
+      log &"Setting array {rtArray.len}"
+      for idx, elem in enumerate(rtArray):
         setProp(elem, innerProp, arrayHelper.getRawPtr(idx.int32))
+
+      # arrayHelper.emptyAndAddUninitializedValues(rtField.getArray().len.int32)
+      # for idx, elem in enumerate(rtField.getArray()):
+      #   setProp(elem, innerProp, arrayHelper.getRawPtr(idx.int32))
 
     elif prop.isTSet():
       let setProp = castField[FSetProperty](prop)
@@ -244,10 +250,13 @@ proc uCallProp*(call : UECall, cls:UClassPtr) : Option[RuntimeField] =
     none(RuntimeField)
 
 proc uCall*(call : UECall) : UECallResult = 
-  let cls = getClassByName(call.getClassName.removeFirstLetter())
+  let className = call.clsName  
+  var cls = getClassByName(className)
   if cls.isNil():
-    UE_Error "uCall: Class " & $call.getClassName() & " not found"
-    return UECallResult()
+    cls = getClassByName(className.removeFirstLetter()) 
+    if cls.isNil():
+      UE_Error "uCall: Class " & $call.getClassName() & " not found"
+      return UECallResult()
   case call.kind:
   of uecFunc: uCallFn(call, cls)
   else: UECallResult(value:uCallProp(call, cls))

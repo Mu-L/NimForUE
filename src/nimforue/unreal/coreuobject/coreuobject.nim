@@ -3,6 +3,7 @@ import nametypes
 import ../core/math/vector
 import ../core/[ftext, core]
 import uobject
+import std/[json, jsonutils]
 
 type
 
@@ -386,9 +387,9 @@ type
   FTimespan* {.importcpp.} = object
   
   FTransform* {.importcpp.} = object
-    scale3D* {.importcpp: "Scale3D".}: FVector
-    translation* {.importcpp: "Translation".}: FVector
-    rotation* {.importcpp: "Rotation".}: FQuat
+    scale3D {.importcpp: "Scale3D".}: FVector
+    translation {.importcpp: "Translation".}: FVector
+    rotation {.importcpp: "Rotation".}: FQuat
 
   FTransform3d* {.importcpp.} = object
     scale3D* {.importcpp: "Scale3D".}: FVector3d
@@ -500,9 +501,10 @@ func rotation*(tr: FTransform): FQuat {.importcpp: "#.GetRotation()".}
 func scale3D*(tr: FTransform): FVector {.importcpp: "#.GetScale3D()".}
 
 func `location=`*(tr: FTransform, value: FVector) {.importcpp: "#.SetLocation(@)".}
-func `translation=`*(tr: FTransform, value: FVector) {.importcpp: "#.SetTranslation(@)".}
-func `rotation=`*(tr: FTransform, value: FQuat) {.importcpp: "#.SetRotation(@)".}
-func `scale3D=`*(tr: FTransform, value: FVector) {.importcpp: "#.SetScale3D(@)".}
+func `translation=`*(tr: var FTransform, value: FVector) {.importcpp: "#.SetTranslation(@)".}
+func `rotation=`*(tr: var FTransform, value: FQuat) {.importcpp: "#.SetRotation(@)".}
+func `scale3D=`*(tr: var FTransform, value: FVector) {.importcpp: "#.SetScale3D(@)".}
+
 
 proc normalizeRotation*(tr: FTransform) {.importcpp: "#.NormalizeRotation()".}
 
@@ -564,3 +566,25 @@ proc realloc*(bulkData: FByteBulkData, size: int32): ptr uint8 {.importcpp: "#.R
 proc addWarning*(context: FDataValidationContext, text:FText) {.importcpp:"#.AddWarning(#)".}
 proc addError*(context: FDataValidationContext, text:FText) {.importcpp:"#.AddError(#)".}
 proc combineDataValidationResults*(result1, result2: EDataValidationResult): EDataValidationResult {.importcpp:"CombineDataValidationResults(@)".}
+
+# #json hooks
+# proc toJsonHook*(quat: FQuat): JsonNode = 
+#   result = newJArray()
+#   result.add newJFloat(quat.x)
+#   result.add newJFloat(quat.y)
+#   result.add newJFloat(quat.z)
+#   result.add newJFloat(quat.w)
+
+# proc fromJsonHook*(quat: var FQuat, node: JsonNode) = 
+#   quat = FQuat(x: node[0].getFloat(), y: node[1].getFloat(), z: node[2].getFloat(), w: node[3].getFloat())
+
+# proc toJsonHook*(transform: FTransform): JsonNode = 
+#   result = newJArray()
+#   result.add transform.getTranslation().toJson()
+#   result.add transform.getRotation().toJson()
+#   result.add transform.getScale3D().toJson()
+
+# proc fromJsonHook*(transform: var FTransform, node: JsonNode) = 
+#   transform.setTranslation(node[0].jsonTo(FVector))
+#   transform.setRotation(node[1].jsonTo(FQuat))
+#   transform.setScale3D(node[2].jsonTo(FVector))

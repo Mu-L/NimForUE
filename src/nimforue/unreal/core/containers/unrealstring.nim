@@ -1,6 +1,6 @@
 include ../../definitions
 
-import std/[widestrs]
+import std/[widestrs, json, jsonutils]
 
 import array
 
@@ -44,3 +44,12 @@ func `==`*(a:FString, b: string): bool = a.equals(b)
 func `&`*(a, b: FString): FString = a.append(b)
 func `&`*(a:string, b: FString): FString = a.toFString().append(b)
 func `&`*(a:FString, b: string): FString = a.append(b)
+
+
+proc toJsonHook*(fstr: FString): JsonNode = 
+  let str = $fstr
+  str.toJson()
+
+proc fromJsonHook*(fstr: var FString, node: JsonNode) = 
+  var str = node.getStr()
+  fstr = str
