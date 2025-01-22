@@ -66,10 +66,14 @@ func getClassFlags*(body:NimNode, classMetadata:seq[UEMetadata], isInterface: bo
             flags = flags or CLASS_EditInlineNew
     (flags, metas)
 
-proc getTypeNodeFromUClassName(name:NimNode) : (string, string, seq[string]) = 
-    if name.toSeq().len() < 3:
+proc getTypeNodeFromUClassName(name:NimNode, isUClass: bool = true) : (string, string, seq[string]) = 
+    if name.toSeq().len() < 3 and isUClass:
         error("uClass must explicitly specify the base class. (i.e UMyObject of UObject)", name)
-    let className = name[1].strVal()
+    
+    if name.len == 0:
+      return (name.strVal(), "", @[])
+    let className =
+        name[1].strVal()
 #[
   import std/macros
   dumpTree:
@@ -410,7 +414,13 @@ macro uClass*(name:untyped, body : untyped) : untyped =
   #  here result.repr
 
 
-func getRawClassTemplate(isSlate: bool, interfaces: seq[string]): string = 
+func getRawClassTemplate(isSlate: bool, interfaces: seq[string], hasParent: bool): string =
+  if not hasParent:
+    return """
+struct $1 {
+  $2  
+};
+  """ 
   var cppInterfaces = interfaces.filterIt(it[0] == 'I').mapIt("public " & it).join(", ")
   if cppInterfaces != "":
     cppInterfaces = ", " & cppInterfaces
@@ -491,7 +501,8 @@ proc genRawCppTypeImpl(name, body : NimNode) : NimNode =
       .flatten
       .anyIt(it.kind == nnkIdent and it.strVal.toLower == "slate")
 
-    let (className, parent, interfaces) = getTypeNodeFromUClassName(name)
+    let (className, parent, interfaces) = getTypeNodeFromUClassName(name, isUClass = false)
+    let hasParent = parent != ""
     let nimProcs = body.children.toSeq
       .filterIt(it.kind in [nnkProcDef, nnkFuncDef, nnkIteratorDef])
       .mapIt(it.addSelfToProc(className).processVirtual(parent))
@@ -511,13 +522,19 @@ proc genRawCppTypeImpl(name, body : NimNode) : NimNode =
       typeNamePtr = ident $className & "Ptr"
       typeParent = ident parent
     var typeDefs=
+      if hasParent:
         genAst(typeName, typeNamePtr, typeParent):
           type 
             typeName {.exportcpp,  inheritable, codegenDecl:"placeholder".} = object of typeParent
             typeNamePtr = ptr typeName
+      else:
+        genAst(typeName, typeNamePtr):
+          type 
+            typeName {.exportcpp,  inheritable, codegenDecl:"placeholder".} = object
+            typeNamePtr = ptr typeName
           
     #Replaces the header pragma vale 'placehodler' from above. For some reason it doesnt want to pick the value directly
-    typeDefs[0][0][^1][^1][^1] = newLit getRawClassTemplate(isSlate, interfaces)
+    typeDefs[0][0][^1][^1][^1] = newLit getRawClassTemplate(isSlate, interfaces, hasParent)
     typeDefs[0][2][2] = recList #set the fields
     if isSlate:
       let arguments = 
