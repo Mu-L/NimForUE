@@ -308,6 +308,7 @@ func removeDepFrom(uet:UEType, cleanedDepTypeName:string) : UEType =
         uet.parent =
           if uet.parent[0] == 'A': "AActor"
           elif "Component" in uet.parent: "UActorComponent" #TODO We should add a new field to the UEType instead
+          elif "Factory" in uet.parent: "UFactory" 
           else: "UObject"
       if uet.interfaces.any():
         uet.interfaces = uet.interfaces.filterIt(it != cleanedDepTypeName)

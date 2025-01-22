@@ -26,7 +26,7 @@ uEnum EEnumVMTest:
   (ValueA, ValueB, ValueC)
 
 uClass UObjectPOC of UObject:
-  (BlueprintType, Reinstance)
+  (BlueprintType)
   ufunc: 
     proc instanceFunc() = 
       UE_Log "Hola from UObjectPOC instanceFunc"
@@ -755,4 +755,87 @@ uClass AUECallMapTest of ANimTestBase:
         )
       discard uCall(callData)      
       check expected == self.mapStringIntProp
-    
+
+uStruct FStructRuntimeFieldPOCOTest:
+  uprops(EditAnywhere):
+    intProp: int32
+    vectorProp: FVector
+
+uStruct FStructWithHeapAllocatedFields:
+  uprops(EditAnywhere):
+    intProp: int32
+    strProp: FString
+
+uClass AUECallArrayTest of ANimTestBase:
+  uprops(EditAnywhere):
+    arrayIntProp: TArray[int]
+    structPocoProp: FStructRuntimeFieldPOCOTest
+    arrayStructPocoProp: TArray[FStructRuntimeFieldPOCOTest]
+    heapAllocatedStructProp: FStructWithHeapAllocatedFields
+    arrayHeapAllocatedStructProp: TArray[FStructWithHeapAllocatedFields]
+
+
+  ufuncs(CallInEditor):
+    proc shouldBeAbleToWriteAnArrayProp() =
+      let expected = makeTArray[int](1, 2, 3, 4, 5)
+      self.arrayIntProp = makeTArray[int]()
+      let callData = UECall(
+          kind: uecSetProp,
+          self: cast[int](self),
+          clsName: "A" & self.getClass.getName(),
+          value: (arrayIntProp: expected).toRuntimeField()                        
+        )
+      UE_Log &"Value send {callData.value}"
+      discard uCall(callData)      
+      check expected == self.arrayIntProp
+
+    proc shouldBeAbleToWriteAPOCOStruct() =
+      let expected = FStructRuntimeFieldPOCOTest(intProp: 10, vectorProp: FVector(x:10, y:10, z:10))
+      self.structPocoProp = FStructRuntimeFieldPOCOTest()
+      let callData = UECall(
+          kind: uecSetProp,
+          self: cast[int](self),
+          clsName: "A" & self.getClass.getName(),
+          value: (structPocoProp: expected).toRuntimeField()                        
+        )
+      discard uCall(callData)      
+      # UE_Log &"Value send {callData.value}"
+      UE_Log &"Value received {self.structPocoProp}"
+      check expected == self.structPocoProp
+
+    proc shouldBeAbleToWriteAnArrayOfStructPoco() =
+      let expected = makeTArray[FStructRuntimeFieldPOCOTest](FStructRuntimeFieldPOCOTest(intProp: 10, vectorProp: FVector(x:10, y:10, z:10)), FStructRuntimeFieldPOCOTest(intProp: 20, vectorProp: FVector(x:20, y:20, z:20)))
+      self.arrayStructPocoProp = makeTArray[FStructRuntimeFieldPOCOTest]()
+      let callData = UECall(
+          kind: uecSetProp,
+          self: cast[int](self),
+          clsName: "A" & self.getClass.getName(),
+          value: (arrayStructPocoProp: expected).toRuntimeField()                        
+        )
+      discard uCall(callData)      
+      check expected == self.arrayStructPocoProp
+
+    proc shouldBeAbleToWriteAHeapAllocatedStruct() =
+      let expected = FStructWithHeapAllocatedFields(intProp: 10, strProp: "Hola")
+      self.heapAllocatedStructProp = FStructWithHeapAllocatedFields()
+      let callData = UECall(
+          kind: uecSetProp,
+          self: cast[int](self),
+          clsName: "A" & self.getClass.getName(),
+          value: (heapAllocatedStructProp: expected).toRuntimeField()                        
+        )
+      discard uCall(callData)      
+      check expected == self.heapAllocatedStructProp
+
+    proc shouldBeAbleToWriteAnArrayOfHeapAllocatedStruct() =
+      let expected = makeTArray[FStructWithHeapAllocatedFields](FStructWithHeapAllocatedFields(intProp: 10, strProp: "Hola"))#, FStructWithHeapAllocatedFields(intProp: 20, strProp: "Mundo"))
+      self.arrayHeapAllocatedStructProp = makeTArray[FStructWithHeapAllocatedFields]()
+      let callData = UECall(
+          kind: uecSetProp,
+          self: cast[int](self),
+          clsName: "A" & self.getClass.getName(),
+          value: (arrayHeapAllocatedStructProp: expected).toRuntimeField()                        
+        )
+      discard uCall(callData)      
+      check expected == self.arrayHeapAllocatedStructProp
+

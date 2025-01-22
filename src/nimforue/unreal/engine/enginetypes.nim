@@ -437,7 +437,8 @@ type
   UNavigationSystemConfig* {.importcpp, inheritable, pure .} = object of UObject
   UNavigationSystemConfigPtr* = ptr UNavigationSystemConfig
 
-
+  UFactory* {.importcpp, inheritable, pure .} = object of UObject
+  UFactoryPtr* = ptr UFactory
   # FNavAgentSelector* {.importcpp .} = object
   # FKConvexElem* {.importcpp .} = object
 

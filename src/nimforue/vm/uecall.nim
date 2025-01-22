@@ -21,6 +21,9 @@ proc makeUECall*(fn : UEFunc, self : UObjectPtr, value : RuntimeField) : UECall 
   result.value = value
   result.kind = uecFunc
 
+proc `+`(container: pointer, offset: SomeNumber): pointer = 
+  cast[pointer](cast[uint](container) + offset.uint)
+
 proc getProp*(prop:FPropertyPtr, sourceAddr:pointer) : RuntimeField
 proc setProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:pointer)
 proc setStructProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:pointer): pointer =
@@ -32,6 +35,7 @@ proc setStructProp*(rtField : RuntimeField, prop : FPropertyPtr, memoryBlock:poi
   for (name, val) in rtField:
     for prop in structProps:
       if name in [prop.getName(), prop.getName.firstToLow()]:
+        UE_Log &"Setting struct value {val} to {prop.getName()} at address {repr structMemoryRegion} offset {prop.getOffset()}"
         if val.kind in [Struct]: 
           structMemoryRegion = cast[pointer](cast[uint](structMemoryRegion) + prop.getOffset().uint)
         val.setProp(prop, structMemoryRegion)
@@ -44,6 +48,7 @@ proc setProp*(rtField: RuntimeField, prop: FPropertyPtr, memoryBlock: pointer) =
     if prop.isFName():
       setPropertyValue[FName](prop, memoryBlock, nameFromInt(rtField.intVal))
     else:
+      # UE_Log &"Setting int value {rtField.intVal} to {prop.getName()} at address {repr memoryBlock} offset {prop.getOffset()} val: {rtField.intVal}"
       setPropertyValue(prop, memoryBlock, rtField.getInt)
   of Bool:
     setPropertyValue(prop, memoryBlock, rtField.getBool)
@@ -54,6 +59,7 @@ proc setProp*(rtField: RuntimeField, prop: FPropertyPtr, memoryBlock: pointer) =
       setPropertyValue(prop, memoryBlock, rtField.getFloat)
   of String:
     if prop.isFString():
+      UE_Log &"Setting string value {rtField.getStr} to {prop.getName()} at address {repr memoryBlock} offset {prop.getOffset()}"
       setPropertyValue(prop, memoryBlock, makeFString rtField.getStr)
     elif prop.isFText():
       setPropertyValue(prop, memoryBlock, rtField.getStr.toText())
@@ -61,6 +67,7 @@ proc setProp*(rtField: RuntimeField, prop: FPropertyPtr, memoryBlock: pointer) =
       UE_Error &"Unknown string type {prop.getCppType()}"
       raise newException(ValueError, &"Unknown string type {prop.getCppType()}")
   of Struct:
+    UE_Log &"Setting struct value {rtField} to {prop.getName()}"
     discard setStructProp(rtField, prop, memoryBlock)
   of Array:
     if prop.isTArray(): 
@@ -71,7 +78,10 @@ proc setProp*(rtField: RuntimeField, prop: FPropertyPtr, memoryBlock: pointer) =
       arrayHelper.emptyAndAddUninitializedValues(rtArray.len.int32)
       log &"Setting array {rtArray.len}"
       for idx, elem in enumerate(rtArray):
-        setProp(elem, innerProp, arrayHelper.getRawPtr(idx.int32))
+        UE_Log &"Setting array value {elem} to {innerProp.getName()} at address {repr arrayHelper.getRawPtr(idx.int32)} offset {innerProp.getOffset()}"
+        let container = arrayHelper.getRawPtr(idx.int32)
+        if container.isNotNil():
+          setProp(elem, innerProp, container + innerProp.getOffset())
 
       # arrayHelper.emptyAndAddUninitializedValues(rtField.getArray().len.int32)
       # for idx, elem in enumerate(rtField.getArray()):

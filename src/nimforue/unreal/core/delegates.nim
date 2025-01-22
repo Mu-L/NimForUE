@@ -29,7 +29,7 @@ proc reset*(del : var FDelegateHandle) {.importcpp: "#.Reset()"}
 type 
   TMulticastDelegate*{.importc, nodecl.} = object
   TMulticastDelegateOneParam*[T] {.importcpp:"TMulticastDelegate<void('0)>", inheritable, nodecl.} = object
-  TDelegateRetOneParam*[R, T] {.importcpp:"TDelegate<'0('1)>", nodecl.} = object
+  TDelegateRetOneParam*[R, T] {.importcpp:"TDelegate<'0('1)>", nodecl, inheritable.} = object
 
 #TODO add macro that binds all delegates with all params
 proc addStatic*(del: TMulticastDelegate, fn: proc() {.cdecl.}) : FDelegateHandle {.importcpp:"#.AddStatic(@)".}
@@ -59,3 +59,5 @@ macro addUObject*(del, obj, fn: typed): untyped =
   genAst(del, delType = del.getTypeInst(), obj, objType = obj.getTypeInst(), f = genSym(nskProc, "addUObject"), importstr):
     proc f(indel: delType, inobj: objType): FDelegateHandle {.importcpp: importstr.}
     f(del, obj)
+
+

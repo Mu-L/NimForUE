@@ -349,6 +349,7 @@ proc toRuntimeField*[T](value : T) : RuntimeField =
     return toRuntimeFieldHook(value)
   else:       
     when T is ptr or T is IntBased or T is FName:
+      # UE_Log &"Int Value: {value}"
       result.kind = Int    
       result.intVal = when T is enum or T is FName: int(value) else: cast[int](value)    
     elif T is bool:
@@ -376,8 +377,12 @@ proc toRuntimeField*[T](value : T) : RuntimeField =
     elif T is (object | tuple):
       result.kind = Struct      
       for name, val in fieldPairs(value):
+        when T is FTransform:
           #We prefer the getter if it exists (it scapes the protected fields in C++ and uses the getter)         
           result.structVal.add((name, toRuntimeField(getterField(value, name))))           
+        else:          
+          # UE_Log "Name: " & name & " Value: " & $val
+          result.structVal.add((name, toRuntimeField(val)))
     else:
       when compiles(UE_Error "") and defined(typename):
         UE_Error &"Unsupported {typeName} type for RuntimeField "

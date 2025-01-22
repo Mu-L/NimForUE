@@ -126,7 +126,8 @@ type
 #TODO before moving on make the parser work with the enums!
   EOrientation* {.size: sizeof(uint8), importcpp, pure.} = enum
     Orient_Horizontal, Orient_Vertical, Orient_MAX
-
+  UEditorSubsystem* {.importcpp, inheritable, pure.} = object of UObject
+  UEditorSubsystemPtr* = ptr UEditorSubsystem
 
 let GEditor* {.importcpp, nodecl.} : UEditorEnginePtr
 
@@ -218,6 +219,8 @@ proc `$`*(cursorLocation:FViewportCursorLocation) : string =
 
 
 proc loadAssetTools*(): IAssetToolsPtr {.importcpp: "&FModuleManager::LoadModuleChecked<FAssetToolsModule>(\"AssetTools\").Get()".}
+#CreateAsset(const FString& AssetName, const FString& PackagePath, UClass* AssetClass, UFactory* Factory,
+proc createAsset*(assetTools: IAssetToolsPtr, assetName: FString, packagePath: FString, assetClass: UClassPtr, factory: UObjectPtr): UObjectPtr {.importcpp: "#->CreateAsset(@)".}
 
 proc registerAssetTypeActions*(assetTools:IAssetToolsPtr, newActions:TSharedRef[FAssetTypeActions_Base]) {.importcpp: "#->RegisterAssetTypeActions(#)".}
 

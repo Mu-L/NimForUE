@@ -604,7 +604,8 @@ macro uSection*(body: untyped): untyped =
         .map(section=>section.children.toSeq())
         .get(newSeq[NimNode]())
       typSection.add types
-      fns.add class.children.toSeq.filterIt(it.kind in [nnkProcDef, nnkFuncDef, nnkIteratorDef])
+      let procs = class.children.toSeq.filterIt(it.kind in [nnkProcDef, nnkFuncDef, nnkIteratorDef])
+      fns.add procs
 
     #TODO allow uStructs in sections
     #set all types in the same typesection
@@ -614,7 +615,7 @@ macro uSection*(body: untyped): untyped =
       typSection.add typDefs
       uprops.add typ[1..^1] #shouldnt this be only for uClasses?
 
-    result = nnkStmtList.newTree(@[typSection] & userPrcsFwds & uFuncFws & uprops & uClassFns & fns)
+    result = nnkStmtList.newTree(@[typSection] & userPrcsFwds & uFuncFws & uprops & fns & uClassFns)
     #here typSection.repr
     #here userPrcsFwds.repr
     #here uFuncFws.repr
